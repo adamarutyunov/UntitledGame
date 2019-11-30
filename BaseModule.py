@@ -1,6 +1,6 @@
 import pygame
 from pygame.rect import Rect
-
+from LocationModule import *
 
 class GameObject:
     def __init__(self, x, y, w, h, speed=[0, 0]):
@@ -96,18 +96,14 @@ class Player(Entity):
     def draw(self, screen):
         pygame.draw.circle(screen,
                            (255, 255, 255),
-                           (self.left, self.top),
-                           self.width)
+                           (round(self.left), round(self.top)),
+                           round(self.width))
 
     def update(self):
         self.update_vector(self.x_delta, self.y_delta)
         self.slow_down(0)
         self.slow_down(1)
         super().update()
-
-
-class Location:
-    pass
 
 
 class Magic:

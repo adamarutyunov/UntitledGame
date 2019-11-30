@@ -1,5 +1,5 @@
 import pygame
-from base import *
+from BaseModule import *
 
 
 class Game:
@@ -9,8 +9,7 @@ class Game:
         self.screen = pygame.display.set_mode(self.get_size())
         
         self.objects = []
-
-        self.keys = []
+        self.location = FirstLocation()
         
     def get_size(self):
         return self.size
@@ -22,6 +21,9 @@ class Game:
         self.screen.fill((0, 0, 0))
         for obj in self.objects:
             obj.draw(self.screen)
+        location = self.location.draw()
+
+        self.screen.blit(location)
         pygame.display.flip()
 
     def close(self):
@@ -32,26 +34,8 @@ class Game:
         for event in events:
             if event.type is pygame.QUIT:
                 self.close()
-
-        self.handle_shortcuts()
         for obj in self.objects:
             obj.update()
-
-    def handle_shortcuts(self):
-        self.keys = pygame.key.get_pressed()
-        x_speed = 0
-        y_speed = 0
-        if self.keys[pygame.K_LEFT]:
-            x_speed -= 1
-        if self.keys[pygame.K_RIGHT]:
-            x_speed += 1
-        if self.keys[pygame.K_UP]:
-            y_speed -= 1
-        if self.keys[pygame.K_DOWN]:
-            y_speed += 1
-            
-        player.x_delta = x_speed
-        player.y_delta = y_speed
         
 
 pygame.init()
@@ -59,10 +43,26 @@ clock = pygame.time.Clock()
 fps = 60
 
 UGame = Game()
-player = Player(100, 100)
 
+player = Player(100, 100)
 UGame.spawn_object(player)
+
 while True:
+    # Need to be vyneseno to dedicated EventHandler class
+    keys = pygame.key.get_pressed()
+    x_speed = 0
+    y_speed = 0
+    if keys[pygame.K_LEFT]:
+        x_speed -= 1
+    if keys[pygame.K_RIGHT]:
+        x_speed += 1
+    if keys[pygame.K_UP]:
+        y_speed -= 1
+    if keys[pygame.K_DOWN]:
+        y_speed += 1
+    player.x_delta = x_speed
+    player.y_delta = y_speed
+        
     UGame.update()
     UGame.draw()
     clock.tick(fps)
