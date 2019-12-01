@@ -35,21 +35,24 @@ class Location:
         self.data = []
         with open(file_name) as f:
             texture = f.read().split("\n")
-            self.height = len(texture)
+            self.height = 0
             for row in texture:
+                if not row:
+                    break
                 self.width = len(row)
+                self.height += 1
                 row_texts = []
                 for column in list(row):
                     row_texts.append(LocationCodes[column]())
                 self.data.append(row_texts)
 
     def draw(self):
-        screen = pygame.display.set_mode(self.width * 20,
-                                         self.height * 20)
+        screen = pygame.display.set_mode((self.width * 20,
+                                         self.height * 20))
 
         for i in range(self.width):
             for j in range(self.height):
-                screen.blit(self.data[j][i].get_texture,
+                screen.blit(self.data[j][i].get_texture(),
                             (i * 20, j * 20))
         return screen
 

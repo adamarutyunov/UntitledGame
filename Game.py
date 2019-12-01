@@ -9,7 +9,7 @@ class Game:
         self.screen = pygame.display.set_mode(self.get_size())
         
         self.objects = []
-        self.location = FirstLocation()
+        self.location = FirstLocation
         
     def get_size(self):
         return self.size
@@ -19,11 +19,12 @@ class Game:
 
     def draw(self):
         self.screen.fill((0, 0, 0))
+        location = self.location.draw()
         for obj in self.objects:
             obj.draw(self.screen)
-        location = self.location.draw()
+        
 
-        self.screen.blit(location)
+        self.screen.blit(location, (0, 0))
         pygame.display.flip()
 
     def close(self):
