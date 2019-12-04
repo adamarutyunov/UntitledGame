@@ -4,12 +4,14 @@ from BaseModule import *
 
 class Game:
     def __init__(self):
-        self.w, self.h = 1000, 500
-        self.size = (self.w, self.h)
-        self.screen = pygame.display.set_mode(self.get_size())
-        
         self.objects = []
         self.location = FirstLocation
+
+        self.size = self.location.get_pixel_size()
+        self.screen = pygame.display.set_mode((1000, 1000))
+
+        self.drawer = Drawer(self.screen)
+        self.drawer.set_location(self.location)
         
     def get_size(self):
         return self.size
@@ -18,14 +20,7 @@ class Game:
         self.objects.append(obj)
 
     def draw(self):
-        self.screen.fill((0, 0, 0))
-        location = self.location.draw()
-        for obj in self.objects:
-            obj.draw(self.screen)
-        
-
-        self.screen.blit(location, (0, 0))
-        pygame.display.flip()
+        self.drawer.draw(self.objects)
 
     def close(self):
         pygame.quit()
@@ -37,7 +32,15 @@ class Game:
                 self.close()
         for obj in self.objects:
             obj.update()
-        
+
+        if player.top - self.drawer.drawdelta_y < 50:
+            self.drawer.deltay(player.top - self.drawer.drawdelta_y - 50)
+        if player.bottom - self.drawer.drawdelta_y > 250:
+            self.drawer.deltay(player.bottom - self.drawer.drawdelta_y - 250)
+        if player.left - self.drawer.drawdelta_x < 50:
+            self.drawer.deltax(player.left - self.drawer.drawdelta_x - 50)
+        if player.right - self.drawer.drawdelta_x > 250:
+            self.drawer.deltax(player.right - self.drawer.drawdelta_x - 250)
 
 pygame.init()
 clock = pygame.time.Clock()
@@ -47,10 +50,10 @@ UGame = Game()
 
 player = Player(100, 100)
 UGame.spawn_object(player)
-
 while True:
     # Need to be vyneseno to dedicated EventHandler class
     keys = pygame.key.get_pressed()
+    #print(player.speed)
     x_speed = 0
     y_speed = 0
     if keys[pygame.K_LEFT]:
@@ -66,6 +69,7 @@ while True:
         
     UGame.update()
     UGame.draw()
+    pygame.event.pump()
     clock.tick(fps)
 
 pygame.quit()

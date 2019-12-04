@@ -21,7 +21,7 @@ class GameObject:
 
     @property
     def bottom(self):
-        return self.bounds[2] + self.bounds[3]
+        return self.bounds[1] + self.bounds[3]
 
     @property
     def width(self):
@@ -83,7 +83,7 @@ class Entity(GameObject):
 
 class Player(Entity):
     def __init__(self, x, y):
-        super().__init__(x, y, 30, 30, [0, 0], 1)
+        super().__init__(x, y, 60, 60, [0, 0], 2)
         self.x_delta = 0
         self.y_delta = 0
 
@@ -93,17 +93,53 @@ class Player(Entity):
         dys = delta * ys
         self.accelerate(dxs, dys)
 
-    def draw(self, screen):
+    def draw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         pygame.draw.circle(screen,
                            (255, 255, 255),
-                           (round(self.left), round(self.top)),
-                           round(self.width))
+                           (30, 30),
+                           round(self.width / 2))
+
+        return screen
 
     def update(self):
         self.update_vector(self.x_delta, self.y_delta)
         self.slow_down(0)
         self.slow_down(1)
         super().update()
+
+
+
+class Drawer:
+    def __init__(self, screen):
+        self.screen = screen
+
+        self.drawdelta_x = 0
+        self.drawdelta_y = 0
+        
+        self.location = None        
+        self.main_surface = None
+
+    def set_location(self, location):
+        self.location = location
+        self.main_surface = pygame.Surface(self.location.get_pixel_size())
+
+    def deltax(self, dx):
+        self.drawdelta_x += dx
+
+    def deltay(self, dy):
+        self.drawdelta_y += dy
+
+    def draw(self, objects):
+        self.main_surface.fill((0, 0, 0))
+        self.screen.fill((0, 0, 0))
+        self.main_surface.blit(self.location.draw(), (0, 0))
+        for obj in objects:
+            draw_surface = obj.draw()
+            if draw_surface:
+                self.main_surface.blit(draw_surface, (obj.left, obj.top))
+        self.screen.blit(self.main_surface, (-self.drawdelta_x, -self.drawdelta_y))
+        pygame.display.flip()
 
 
 class Magic:
