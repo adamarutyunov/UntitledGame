@@ -87,6 +87,12 @@ class Player(Entity):
         self.x_delta = 0
         self.y_delta = 0
 
+    def deltax(self, dx):
+        self.x_delta += dx
+
+    def deltay(self, dy):
+        self.y_delta += dy
+
     def update_vector(self, xs, ys):
         delta = self.max_speed / 5 
         dxs = delta * xs
@@ -107,21 +113,22 @@ class Player(Entity):
         self.slow_down(0)
         self.slow_down(1)
         super().update()
-
+        self.x_delta = 0
+        self.y_delta = 0
 
 
 class Drawer:
-    def __init__(self, screen):
-        self.screen = screen
+    def __init__(self, game):
+        self.game = game
+        self.screen = self.game.screen
 
         self.drawdelta_x = 0
         self.drawdelta_y = 0
         
-        self.location = None        
-        self.main_surface = None
+        self.set_location()      
 
-    def set_location(self, location):
-        self.location = location
+    def set_location(self):
+        self.location = self.game.get_location()
         self.main_surface = pygame.Surface(self.location.get_pixel_size())
 
     def deltax(self, dx):
@@ -129,6 +136,12 @@ class Drawer:
 
     def deltay(self, dy):
         self.drawdelta_y += dy
+
+    def get_dd_x(self):
+        return self.drawdelta_x
+
+    def get_dd_y(self):
+        return self.drawdelta_y
 
     def draw(self, objects):
         self.main_surface.fill((0, 0, 0))
@@ -141,7 +154,45 @@ class Drawer:
         self.screen.blit(self.main_surface, (-self.drawdelta_x, -self.drawdelta_y))
         pygame.display.flip()
 
+    def update_drawdeltas(self):
+        player = self.game.get_main_player()
+        
+        if player.top - self.get_dd_y() < 50:
+            self.deltay(player.top - self.get_dd_y() - 50)
+        if player.bottom - self.get_dd_y() > 250:
+            self.deltay(player.bottom - self.get_dd_y() - 250)
+        if player.left - self.get_dd_x() < 50:
+            self.deltax(player.left - self.get_dd_x() - 50)
+        if player.right - self.get_dd_x() > 250:
+            self.deltax(player.right - self.get_dd_x() - 250)
 
+
+
+class EventHandler:
+    def __init__(self, game):
+        self.game = game
+
+    def process_events(self):
+        events = pygame.event.get()
+        keys = pygame.key.get_pressed()
+        self.handle_events(events)
+        self.handle_keys(keys)
+
+    def handle_events(self, events):
+        for event in events:
+            if event.type is pygame.QUIT:
+                self.game.close()
+
+    def handle_keys(self, keys):
+        if keys[pygame.K_LEFT]:
+            self.game.main_player.deltax(-1)
+        if keys[pygame.K_RIGHT]:
+            self.game.main_player.deltax(1)
+        if keys[pygame.K_UP]:
+            self.game.main_player.deltay(-1)
+        if keys[pygame.K_DOWN]:
+            self.game.main_player.deltay(1)
+            
 class Magic:
     def __init__(self, func):
         self.func = func
