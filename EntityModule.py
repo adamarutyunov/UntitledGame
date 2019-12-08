@@ -104,11 +104,29 @@ class Player(Entity):
         self.slow_down(0)
         self.slow_down(1)
 
-        hits = list(filter(lambda x: not x.transition, pygame.sprite.spritecollide(self,                                                                                   self.game.get_environment_objects(),
-                                                                                   False)))
-        if hits:
-            self.speed[0] = -self.speed[0]
-            self.speed[1] = -self.speed[1]
+        walls = list(filter(lambda x: not x.transition, pygame.sprite.spritecollide(self, self.game.get_environment_objects(), False)))
+
+        center = self.center
+        last_x = center[0] - self.speed[0]
+        last_y = center[1] - self.speed[1]
+
+        for wall in walls:
+            wx = wall.centerx
+            wy = wall.centery
+            rect = self.rect.clip(wall.rect)
+            
+            if abs(last_x - wx) >= abs(last_y - wy):
+                if self.speed[0] > 0:
+                    self.move(-rect.width, 0)
+                elif self.speed[1] < 0:
+                    self.move(rect.width, 0)
+                self.speed[0] = 0
+            if abs(last_x - wx) <= abs(last_y - wy):
+                if self.speed[1] > 0:
+                    self.move(0, -rect.height)
+                elif self.speed[1] < 0:
+                    self.move(0, rect.height)
+                self.speed[1] = 0
 
         super().update()
         

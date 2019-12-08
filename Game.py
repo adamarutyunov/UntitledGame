@@ -11,7 +11,7 @@ class Game:
         self.objects = []
         self.environment_objects = []
         
-        self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode(SCREEN_SIZE)
 
         self.main_player = None
         self.main_drawer = None
