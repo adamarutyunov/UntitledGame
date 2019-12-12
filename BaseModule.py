@@ -4,7 +4,7 @@ import pygame
 class GameObject:
     def __init__(self, x, y, w, h, speed=[0, 0]):
         self.bounds = [x, y, w, h]
-        self.rect = pygame.Rect(x, y, w, h)
+        self.update_rect()
         self.speed = speed
 
     @property
@@ -46,8 +46,19 @@ class GameObject:
     def move(self, dx, dy):
         self.bounds[0] += dx
         self.bounds[1] += dy
-        self.rect = pygame.Rect(self.left, self.top, self.width, self.height)
+        self.update_rect()
+
+    def set_x(self, x):
+        self.bounds[0] = x
+        self.update_rect()
+
+    def set_y(self, y):
+        self.bounds[1] = y
+        self.update_rect()
 
     def update(self):
         self.move(*self.speed)
+
+    def update_rect(self):
+        self.rect = pygame.Rect(self.left, self.top, self.width, self.height)
 

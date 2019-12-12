@@ -4,6 +4,7 @@ from Constants import *
 from LocationModule import *
 from TechnicalModule import *
 from EntityModule import *
+from MagicModule import *
 
 
 class Game:
@@ -79,6 +80,9 @@ class Game:
         for obj in self.objects:
             obj.update()
 
+    def affect_effect(self, game_object, effect):
+        game_object.affect_effect(effect)
+
 pygame.init()
 clock = pygame.time.Clock()
 fps = 60
@@ -102,6 +106,13 @@ player = Player(100, 100, UGame)
 
 UGame.set_main_player(player)
 UGame.spawn_object(UGame.get_main_player())
+
+###
+def ReduceMana(obj):
+    obj.mana -= 0.05
+eff = Effect(12000, ReduceMana)
+UGame.affect_effect(player, eff)
+###
 
 while True:
     UGame.update()

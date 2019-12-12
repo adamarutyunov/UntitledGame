@@ -13,6 +13,8 @@ class Entity(GameObject):
         self.health = 0
         self.mana = 0
 
+        self.effects = []
+
     def set_max_speed(self, speed):
         self.max_speed = speed
 
@@ -63,16 +65,31 @@ class Entity(GameObject):
             self.speed[k] += delta
             if self.speed[k] > 0:
                 self.speed[k] = 0
+
+    def update(self):
+        super().update()
+
+        for effect in self.effects:
+            effect.run(self)
+        self.effects = list(filter(lambda x: x.is_active(), self.effects))
+
+        if self.mana < 0:
+            self.mana = 0
+
+    def affect_effect(self, effect):
+        self.effects.append(effect)
         
 
 class Player(Entity):
     def __init__(self, x, y, game):
         super().__init__(x, y, 60, 60, [0, 0], game)
+        
         self.x_delta = 0
         self.y_delta = 0
+
         self.set_max_health(100)
         self.set_max_mana(100)
-        self.set_max_speed(2)
+        self.set_max_speed(5)
 
         self.health = self.get_max_health()
         self.mana = self.get_max_mana()
@@ -95,7 +112,6 @@ class Player(Entity):
                            (255, 255, 255),
                            (30, 30),
                            round(self.width / 2))
-
         return screen
 
     def update(self):
@@ -103,6 +119,8 @@ class Player(Entity):
         
         self.slow_down(0)
         self.slow_down(1)
+
+        super().update()
 
         walls = list(filter(lambda x: not x.transition, pygame.sprite.spritecollide(self, self.game.get_environment_objects(), False)))
 
@@ -113,22 +131,18 @@ class Player(Entity):
         for wall in walls:
             wx = wall.centerx
             wy = wall.centery
-            rect = self.rect.clip(wall.rect)
-            
             if abs(last_x - wx) >= abs(last_y - wy):
                 if self.speed[0] > 0:
-                    self.move(-rect.width, 0)
-                elif self.speed[1] < 0:
-                    self.move(rect.width, 0)
+                    self.set_x(wall.rect.left - self.width)
+                elif self.speed[0] < 0:
+                    self.set_x(wall.rect.right)
                 self.speed[0] = 0
             if abs(last_x - wx) <= abs(last_y - wy):
                 if self.speed[1] > 0:
-                    self.move(0, -rect.height)
+                    self.set_y(wall.rect.top - self.height)
                 elif self.speed[1] < 0:
-                    self.move(0, rect.height)
+                    self.set_y(wall.rect.bottom)
                 self.speed[1] = 0
-
-        super().update()
         
         self.x_delta = 0
         self.y_delta = 0
