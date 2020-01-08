@@ -57,12 +57,14 @@ class Drawer:
 class EventHandler:
     def __init__(self, game):
         self.game = game
+        self.last_keys = pygame.key.get_pressed()
 
     def process_events(self):
         events = pygame.event.get()
         keys = pygame.key.get_pressed()
         self.handle_events(events)
         self.handle_keys(keys)
+        self.last_keys = keys
 
     def handle_events(self, events):
         for event in events:
@@ -71,13 +73,16 @@ class EventHandler:
 
     def handle_keys(self, keys):
         if keys[pygame.K_LEFT]:
-            self.game.main_player.deltax(-1)
+            self.game.get_main_player().deltax(-1)
         if keys[pygame.K_RIGHT]:
-            self.game.main_player.deltax(1)
+            self.game.get_main_player().deltax(1)
         if keys[pygame.K_UP]:
-            self.game.main_player.deltay(-1)
+            self.game.get_main_player().deltay(-1)
         if keys[pygame.K_DOWN]:
-            self.game.main_player.deltay(1)
+            self.game.get_main_player().deltay(1)
+        
+        if keys[pygame.K_e] and not self.last_keys[pygame.K_e]:
+            self.game.get_main_player().use_current_item()
 
 
 class GUI:

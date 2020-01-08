@@ -62,3 +62,18 @@ class GameObject:
     def update_rect(self):
         self.rect = pygame.Rect(self.left, self.top, self.width, self.height)
 
+
+class Item:
+    def __init__(self, function=lambda: None, name=''):
+        self.function = function
+        self.name = name
+
+    def use(self, obj):
+        self.function(obj)
+
+
+class Weapon(Item):
+    def __init__(self, damage, name):
+        super().__init__(name)
+        self.damage = damage
+        

@@ -27,3 +27,6 @@ class Effect:
 
         if self.duration <= 0:
             self.function = DEF_NULL
+
+    def copy(self):
+        return Effect(self.duration, self.function)

@@ -109,9 +109,11 @@ UGame.spawn_object(UGame.get_main_player())
 
 ###
 def ReduceMana(obj):
-    obj.mana -= 0.05
-eff = Effect(12000, ReduceMana)
-UGame.affect_effect(player, eff)
+    obj.mana -= 30
+eff = Effect(1, ReduceMana)
+
+HPReducer = Item(lambda obj: obj.affect_effect(eff.copy()), "The Great Damage Reducer")
+player.get_item(HPReducer)
 ###
 
 while True:
