@@ -1,5 +1,7 @@
 import pygame
-from BaseModule import GameObject
+from math import copysign
+from BaseModule import *
+from Constants import *
 
 
 class Entity(GameObject):
@@ -14,8 +16,14 @@ class Entity(GameObject):
         self.mana = 0
 
         self.effects = []
-        self.inventory = []
+        self.inventory = [None] * 28
         self.current_item_index = 0
+
+        self.move_state = [1, 0]
+
+        self.pixmaps = {}
+
+        self.pixmap_ticks = 0
 
     def set_max_speed(self, speed):
         self.max_speed = speed
@@ -44,18 +52,56 @@ class Entity(GameObject):
     def get_speed(self):
         return self.speed
 
+    def fill_attributes(self):
+        self.health = self.get_max_health()
+        self.mana = self.get_max_mana()
+
+    def get_move_state(self):
+        return self.move_state
+
+    def set_move_state(self, dxs, dys):
+        if dxs == dys == 0:
+            return
+
+        if dxs > 0:
+            self.move_state[0] = 1
+        elif dxs < 0:
+            self.move_state[0] = -1
+        else:
+            self.move_state[0] = 0
+
+        if dys > 0:
+            self.move_state[1] = 1
+        elif dys < 0:
+            self.move_state[1] = -1
+        else:
+            self.move_state[1] = 0
+            
     def accelerate(self, dxs, dys):
+        self.set_move_state(dxs, dys)
+        if dxs != 0 or dys != 0:
+            self.pixmap_ticks += 1
+        
         self.speed[0] += dxs
         self.speed[1] += dys
+
+        move_vector = (self.speed[0] ** 2 + self.speed[1] ** 2) ** 0.5
         
-        if self.speed[0] > self.max_speed:
-            self.speed[0] = self.max_speed
-        if self.speed[0] < -self.max_speed:
-            self.speed[0] = -self.max_speed
-        if self.speed[1] > self.max_speed:
-            self.speed[1] = self.max_speed
-        if self.speed[1] < -self.max_speed:
-            self.speed[1] = -self.max_speed
+        if move_vector > self.max_speed:
+            if self.speed[1] == 0:
+                self.speed[0] = copysign(self.max_speed, self.speed[0])
+            elif self.speed[0] == 0:
+                self.speed[1] = copysign(self.max_speed, self.speed[1])
+            else:
+                sy = (self.max_speed ** 2 / ((self.speed[0] / self.speed[1]) ** 2 + 1)) ** 0.5
+                sx = sy * self.speed[0] / self.speed[1]
+                self.speed = [copysign(sx, self.speed[0]), copysign(sy, self.speed[1])]
+
+    def update_vector(self, xs, ys):
+        delta = self.max_speed / 5 
+        dxs = delta * xs
+        dys = delta * ys
+        self.accelerate(dxs, dys)
 
     def slow_down(self, k):
         delta = self.max_speed / 10
@@ -69,16 +115,14 @@ class Entity(GameObject):
                 self.speed[k] = 0
 
     def get_item(self, item):
-        self.inventory.append(item)
+        if not None in self.inventory:
+            return
+        self.inventory[self.inventory.index(None)] = item
 
     def remove_item(self, item):
         self.inventory.remove(item)
 
-    def use_current_item(self):
-        self.inventory[self.current_item_index].use(self)
-
     def update(self):
-        
         super().update()
         last_x, last_y = self.center
 
@@ -109,13 +153,48 @@ class Entity(GameObject):
         if self.mana < 0:
             self.mana = 0
 
+        self.slow_down(0)
+        self.slow_down(1)
+
+        if self.get_health() <= 0:
+            self.game.get_objects().remove(self)
+
     def affect_effect(self, effect):
         self.effects.append(effect)
+
+    def get_damage(self, damage):
+        self.health -= damage
+
+    def get_attacked_enemies(self, attack_range):
+        attacked_enemies = []
+        enemies = self.game.get_objects()
+        move_status = self.get_move_state()
+        for e in enemies:
+            dx = e.centerx - self.centerx
+            dy = e.centery - self.centery
+            dist = (dx ** 2 + dy ** 2) ** 0.5
+            if (dx * move_status[0] >= 0 and dy * move_status[1] >= 0 and
+                    dist < attack_range and e is not self):
+                attacked_enemies.append(e)
+        return attacked_enemies
+
+    def use_current_item(self):
+        current_item = self.inventory[self.current_item_index]
+
+        if type(current_item) is None:
+            return
+        if type(current_item) is Weapon:
+            enemies = self.get_attacked_enemies(current_item.get_attack_radius())
+            for e in enemies:
+                current_item.use(e)
+            return
+
+        current_item.use(self)
         
 
 class Player(Entity):
     def __init__(self, x, y, game):
-        super().__init__(x, y, 60, 60, [0, 0], game)
+        super().__init__(x, y, 42, 90, [0, 0], game)
         
         self.x_delta = 0
         self.y_delta = 0
@@ -124,8 +203,34 @@ class Player(Entity):
         self.set_max_mana(100)
         self.set_max_speed(5)
 
-        self.health = self.get_max_health()
-        self.mana = self.get_max_mana()
+        self.fill_attributes()
+
+        self.texture_path = "textures/player/"
+        self.load_pixmaps()
+
+    def load_pixmaps(self):
+        def gtn(name):
+            return self.texture_path + name + ".png"
+        
+        self.pixmaps[0] = [load_image(gtn("player_up_1"), -1),
+                           load_image(gtn("player_up_2"), -1)]
+        self.pixmaps[1] = [load_image(gtn("player_right_1"), -1),
+                           load_image(gtn("player_right_2"), -1)]
+        self.pixmaps[2] = [load_image(gtn("player_down_1"), -1),
+                           load_image(gtn("player_down_2"), -1)]
+        self.pixmaps[3] = [load_image(gtn("player_left_1"), -1),
+                           load_image(gtn("player_left_2"), -1)]
+
+    def calculate_current_pixmap(self):
+        move_state = self.get_move_state()
+        if move_state[0] == 1:
+            self.current_pixmap_index = 1
+        elif move_state[0] == -1:
+            self.current_pixmap_index = 3
+        elif move_state[1] == 1:
+            self.current_pixmap_index = 2
+        elif move_state[1] == -1:
+            self.current_pixmap_index = 0
 
     def deltax(self, dx):
         self.x_delta += dx
@@ -133,29 +238,78 @@ class Player(Entity):
     def deltay(self, dy):
         self.y_delta += dy
 
-    def update_vector(self, xs, ys):
-        delta = self.max_speed / 5 
-        dxs = delta * xs
-        dys = delta * ys
-        self.accelerate(dxs, dys)
-
     def draw(self):
         screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        pygame.draw.circle(screen,
-                           (255, 255, 255),
-                           (30, 30),
-                           round(self.width / 2))
+        screen.blit(self.pixmaps[self.current_pixmap_index][self.pixmap_ticks // 10 % 2],
+                    (0, 0))
         return screen
 
     def update(self):
         self.update_vector(self.x_delta, self.y_delta)
-        
-        self.slow_down(0)
-        self.slow_down(1)
+        self.calculate_current_pixmap()
 
         super().update()
 
-        
-        
         self.x_delta = 0
         self.y_delta = 0
+
+
+class Zombie(Entity):
+    def __init__(self, x, y, game):
+        super().__init__(x, y, 60, 60, [0, 0], game)
+
+        self.set_max_health(50)
+        self.set_max_mana(100)
+        self.set_max_speed(2)
+
+        self.fill_attributes()
+
+        self.vision_radius = 500
+        self.attack_radius = 50
+
+        self.power = 10
+        self.attack_cooldown = 60
+        self.current_cooldown = 0
+
+        self.targets = [Player]
+
+    def draw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        pygame.draw.circle(screen,
+                           (255, 0, 0),
+                           (30, 30),
+                           round(self.width / 2))
+        return screen
+        
+    def update(self):
+        enemies = list(filter(lambda x: type(x) in self.targets, self.game.get_objects()))
+
+        if not enemies:
+            return
+
+        nearest_player = min(enemies, key=lambda x: (self.centerx - x.centerx) ** 2 + (self.centery - x.centery) ** 2)
+        distance_to_nearest_player = ((self.centerx - nearest_player.centerx) ** 2 +
+                                      (self.centery - nearest_player.centery) ** 2) ** 0.5
+        
+        if distance_to_nearest_player <= self.attack_radius:
+            if self.current_cooldown <= 0:
+                nearest_player.get_damage(self.power)
+                self.current_cooldown = self.attack_cooldown
+        elif distance_to_nearest_player <= self.vision_radius:
+            dx = self.centerx - nearest_player.centerx
+            dy = self.centery - nearest_player.centery
+
+            if abs(dx) > abs(dy):
+                dx, dy = copysign(1, -dx), copysign(abs(dy / dx), -dy)
+            elif abs(dx) < abs(dy):
+                dy, dx = copysign(1, -dy), copysign(abs(dx / dy), -dx)
+            else:
+                dy, dx = copysign(1, -dy), copysign(1, -dx)
+
+            self.update_vector(dx, dy)
+
+        if self.current_cooldown > 0:
+            self.current_cooldown -= 1
+
+        super().update()
+

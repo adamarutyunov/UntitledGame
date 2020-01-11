@@ -71,9 +71,13 @@ class Item:
     def use(self, obj):
         self.function(obj)
 
-
 class Weapon(Item):
-    def __init__(self, damage, name):
-        super().__init__(name)
-        self.damage = damage
-        
+    def __init__(self, attack_radius, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attack_radius = attack_radius
+
+    def get_attack_radius(self):
+        return self.attack_radius
+
+    def set_attack_radiue(self, attack_radius):
+        self.attack_radius = attack_radius

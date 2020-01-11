@@ -103,17 +103,18 @@ GameGUI = GUI(UGame)
 UGame.set_main_gui(GameGUI)
 
 player = Player(100, 100, UGame)
+zombie = Zombie(200, 100, UGame)
 
 UGame.set_main_player(player)
 UGame.spawn_object(UGame.get_main_player())
+#UGame.spawn_object(zombie)
 
 ###
-def ReduceMana(obj):
-    obj.mana -= 30
-eff = Effect(1, ReduceMana)
+def damage(obj):
+    obj.get_damage(20)
 
-HPReducer = Item(lambda obj: obj.affect_effect(eff.copy()), "The Great Damage Reducer")
-player.get_item(HPReducer)
+weapon = Weapon(200, damage)
+player.get_item(weapon)
 ###
 
 while True:
