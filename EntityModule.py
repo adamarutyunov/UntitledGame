@@ -8,6 +8,7 @@ class Entity(GameObject):
     def __init__(self, x, y, w, h, speed, game):
         super().__init__(x, y, w, h, speed)
         self.game = game
+
         self.max_speed = 0
         self.max_health = 0
         self.max_mana = 0
@@ -18,6 +19,10 @@ class Entity(GameObject):
         self.effects = []
         self.inventory = [None] * 28
         self.current_item_index = 0
+
+        self.strength_characteristic = 0
+        self.speed_characteristic = 0
+        self.intelligence_characteristic = 0
 
         self.move_state = [1, 0]
 
@@ -51,6 +56,45 @@ class Entity(GameObject):
 
     def get_speed(self):
         return self.speed
+
+    def set_health(self, health):
+        self.health = health
+
+    def set_mana(self, mana):
+        self.mana = mana
+
+    def change_health(self, health):
+        self.health += health
+
+    def change_mana(self, mana):
+        self.mana += mana
+
+    def get_strength_characteristic(self):
+        return self.strength_characteristic
+
+    def get_speed_characteristic(self):
+        return self.speed_characteristic
+
+    def get_intelligence_characteristic(self):
+        return self.intelligence_characteristic
+
+    def set_strength_characteristic(self, strength):
+        self.strength_characteristic = strength
+
+    def set_speed_characteristic(self, speed):
+        self.speed_characteristic = speed
+
+    def set_intelligence_characteristic(self, intelligence):
+        self.intelligence_characteristic = intelligence
+
+    def change_strength_characteristic(self, strength):
+        self.strength_characteristic += strength
+
+    def change_speed_characteristic(self, speed):
+        self.speed_characteristic += speed
+
+    def change_intelligence_characteristic(self, intelligence):
+        self.intelligence_characteristic += intelligence
 
     def fill_attributes(self):
         self.health = self.get_max_health()

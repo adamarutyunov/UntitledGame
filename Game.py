@@ -1,4 +1,6 @@
 import pygame
+pygame.display.set_mode((1, 1))
+
 from BaseModule import *
 from Constants import *
 from LocationModule import *
@@ -9,15 +11,16 @@ from MagicModule import *
 
 class Game:
     def __init__(self):
-        self.objects = []
-        self.environment_objects = []
-        
-        self.screen = pygame.display.set_mode(SCREEN_SIZE)
+        self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN | pygame.SRCALPHA)
 
         self.main_player = None
         self.main_drawer = None
         self.main_event_handler = None
         self.main_gui = None
+
+        self.gui_state = False
+
+        self.current_location = None
         
     def get_size(self):
         return self.size
@@ -26,13 +29,13 @@ class Game:
         return self.screen
 
     def get_location(self):
-        return self.location
+        return self.current_location
 
     def get_objects(self):
-        return self.objects
+        return self.current_location.get_objects()
 
     def get_environment_objects(self):
-        return self.environment_objects
+        return self.current_location.get_environment_objects()
 
     def set_main_player(self, player):
         self.main_player = player
@@ -59,17 +62,26 @@ class Game:
         return self.main_gui
 
     def load_location(self, location):
-        self.location = location
-        self.size = self.location.get_pixel_size()
+        self.current_location = location
+        self.size = self.current_location.get_pixel_size()
 
     def spawn_object(self, obj):
-        self.objects.append(obj)
+        self.current_location.spawn_object(obj)
 
     def spawn_environment_object(self, obj):
-        self.environment_objects.append(obj)
+        self.current_location.spawn_ecvironment_object(obj)
 
     def draw(self):
-        self.main_drawer.draw(self.objects)
+        self.main_drawer.draw(self.current_location.get_objects())
+
+    def set_gui_state(self, state):
+        self.gui_state = state
+
+    def toggle_gui(self):
+        self.gui_state = not self.gui_state
+
+    def get_gui_state(self):
+        return self.gui_state
 
     def close(self):
         pygame.quit()
@@ -77,17 +89,15 @@ class Game:
     def update(self):
         self.main_event_handler.process_events()
         self.main_drawer.update_drawdeltas()
-        for obj in self.objects:
+        for obj in self.current_location.get_objects():
             obj.update()
-
-    def affect_effect(self, game_object, effect):
-        game_object.affect_effect(effect)
 
 pygame.init()
 clock = pygame.time.Clock()
 fps = 60
 
 UGame = Game()
+pygame.display.update()
 
 FirstLocation = Location(UGame)
 FirstLocation.load(f"{locations_path}/FirstLocation.loc")
@@ -118,9 +128,12 @@ player.get_item(weapon)
 ###
 
 while True:
-    UGame.update()
-    UGame.draw()
-    pygame.event.pump()
-    clock.tick(fps)
+    try:
+        UGame.update()
+        UGame.draw()
+        pygame.event.pump()
+        clock.tick(fps)
+    except pygame.error:
+        break
 pygame.quit()
     

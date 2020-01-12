@@ -40,6 +40,9 @@ class Location:
         self.width = -1
         self.height = -1
 
+        self.objects = []
+        self.environment_objects = []
+
     def load(self, file_name):
         self.data = []
         with open(file_name) as f:
@@ -62,7 +65,7 @@ class Location:
                                                  i * CELL_SIZE,
                                                  CELL_SIZE,
                                                  CELL_SIZE)
-                self.game.spawn_environment_object(self.data[i][j])
+                self.spawn_environment_object(self.data[i][j])
         self.update()
 
     def get_size(self):
@@ -82,9 +85,21 @@ class Location:
     def draw(self):
         return self.screen
 
+    def get_objects(self):
+        return self.objects
+
+    def get_environment_objects(self):
+        return self.environment_objects
+
+    def spawn_object(self, obj):
+        self.objects.append(obj)
+
+    def spawn_environment_object(self, obj):
+        self.environment_objects.append(obj)
+
 field_textures_path = "textures/fields"
-GrassTexture = pygame.image.load(f"{field_textures_path}/GrassField.png")
-NoneTexture = pygame.image.load(f"{field_textures_path}/NoneField.png")
+GrassTexture = load_image(f"{field_textures_path}/GrassField.png")
+NoneTexture = load_image(f"{field_textures_path}/NoneField.png")
 
 LocationCodes = {
     "G": GrassField,

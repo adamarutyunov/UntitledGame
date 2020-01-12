@@ -6,7 +6,7 @@ from Constants import *
 class Drawer:
     def __init__(self, game):
         self.game = game
-        self.screen = self.game.screen
+        self.screen = self.game.get_screen()
 
         self.drawdelta_x = 0
         self.drawdelta_y = 0
@@ -15,7 +15,7 @@ class Drawer:
 
     def set_location(self):
         self.location = self.game.get_location()
-        self.main_surface = pygame.Surface(self.location.get_pixel_size())
+        self.main_surface = pygame.Surface(self.location.get_pixel_size(), pygame.SRCALPHA)
 
     def deltax(self, dx):
         self.drawdelta_x += dx
@@ -37,9 +37,10 @@ class Drawer:
             draw_surface = obj.draw()
             if draw_surface:
                 self.main_surface.blit(draw_surface, (obj.left, obj.top))
+
         self.screen.blit(self.main_surface, (-self.drawdelta_x, -self.drawdelta_y))
-        GUI_Interface = self.game.get_main_gui().draw()
-        self.screen.blit(GUI_Interface, (0, 0))
+        self.game.get_main_gui().draw()
+        
         pygame.display.flip()
 
     def update_drawdeltas(self):
@@ -83,18 +84,46 @@ class EventHandler:
         
         if keys[pygame.K_e] and not self.last_keys[pygame.K_e]:
             self.game.get_main_player().use_current_item()
+        if keys[pygame.K_TAB] and not self.last_keys[pygame.K_TAB]:
+            self.game.toggle_gui()
 
+
+class Inventory:
+    def __init__(self, game):
+        self.cells_pixmap = load_image("textures/gui/inventory.png")
+        self.width = self.cells_pixmap.get_rect().width
+        self.height = self.cells_pixmap.get_rect().height
+
+        self.screen = None
+        self.redraw()
+
+    def redraw(self):
+        rect = self.cells_pixmap.get_rect()
+        screen = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+
+        for i in range(4):
+            for j in range(7):
+                pass
+                pygame.draw.rect(screen, (0, 0, 0, 127), (j * 60 + 7, i * 60 + 7, 50, 50))
+
+        screen.blit(self.cells_pixmap, (0, 0))
+
+        self.screen = pygame.transform.scale(screen, (695, 400))
+
+    def draw(self):
+        return self.screen
+        
 
 class GUI:
     def __init__(self, game):
         self.game = game
+        self.inventory = Inventory(game)
 
     def get_player_attributes(self):
         player = self.game.get_main_player()
         return (player.get_health(), player.get_mana()), (player.get_max_health(), player.get_max_mana())
     
     def draw(self):
-        screen = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
         attrs = self.get_player_attributes()
 
         indicators = pygame.Surface((SCREEN_SIZE[0] // 10,
@@ -110,6 +139,9 @@ class GUI:
                          [0, size[1] // 3 * 2, size[0] * attrs[0][1] // attrs[1][1],
                          size[1] // 3])
 
-        screen.blit(indicators, (30, 30))
-        return screen
+        self.game.screen.blit(indicators, (30, 30))
         
+        if self.game.get_gui_state():
+            inventory = self.inventory.draw()
+            self.game.screen.blit(inventory, (30, SCREEN_SIZE[1] - 30 - inventory.get_rect().height))
+                
