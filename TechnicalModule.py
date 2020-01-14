@@ -73,13 +73,13 @@ class EventHandler:
                 self.game.close()
 
     def handle_keys(self, keys):
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_a]:
             self.game.get_main_player().deltax(-1)
-        if keys[pygame.K_RIGHT]:
+        if keys[pygame.K_d]:
             self.game.get_main_player().deltax(1)
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_w]:
             self.game.get_main_player().deltay(-1)
-        if keys[pygame.K_DOWN]:
+        if keys[pygame.K_s]:
             self.game.get_main_player().deltay(1)
         
         if keys[pygame.K_e] and not self.last_keys[pygame.K_e]:
@@ -88,36 +88,109 @@ class EventHandler:
             self.game.toggle_gui()
 
 
-class Inventory:
-    def __init__(self, game):
-        self.cells_pixmap = load_image("textures/gui/inventory.png")
-        self.width = self.cells_pixmap.get_rect().width
-        self.height = self.cells_pixmap.get_rect().height
+class GUIModule:
+    def __init__(self, pixmap, game):
+        self.game = game
+        
+        self.pixmap = pixmap
+        self.rect = self.pixmap.get_rect()
+        
+        self.width = self.rect.width
+        self.height = self.rect.height
 
         self.screen = None
-        self.redraw()
+
+    def get_width(self):
+        return self.width
+
+    def get_height(self):
+        return self.height
 
     def redraw(self):
-        rect = self.cells_pixmap.get_rect()
-        screen = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-
-        for i in range(4):
-            for j in range(7):
-                pass
-                pygame.draw.rect(screen, (0, 0, 0, 127), (j * 60 + 7, i * 60 + 7, 50, 50))
-
-        screen.blit(self.cells_pixmap, (0, 0))
-
-        self.screen = pygame.transform.scale(screen, (695, 400))
+        pass
 
     def draw(self):
         return self.screen
-        
+
+
+class Inventory(GUIModule):
+    def __init__(self, game):
+        self.cells_pixmap = load_image("textures/gui/inventory.png")
+        super().__init__(self.cells_pixmap, game)
+
+        self.label = MagicFont.render("Inventory", True, LABEL_COLOR)
+        self.label_rect = self.label.get_rect()
+
+        self.redraw()
+
+    def redraw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+        pygame.draw.rect(screen, (0, 0, 0, 127), (0, 0, self.width, self.height))
+
+        screen.blit(self.cells_pixmap, (0, 0))
+        screen.blit(self.label, (self.width // 2 - self.label_rect.width // 2, 6))
+
+        self.screen = screen
+
+
+class ItemCell(GUIModule):
+    def __init__(self, game):        
+        self.cell_pixmap = load_image("textures/gui/cell.png")
+        super().__init__(self.cell_pixmap, game)
+
+        self.redraw()
+
+    def redraw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+        pygame.draw.rect(screen, (0, 0, 0, 127), (0, 0, self.width, self.height))
+        screen.blit(self.cell_pixmap, (0, 0))
+
+        self.screen = screen
+
+
+class AttributeBar(GUIModule):
+    def __init__(self, game):
+        self.attribute_bar_pixmap = load_image("textures/gui/attribute_bar.png")
+        super().__init__(self.attribute_bar_pixmap, game)
+
+        self.redraw()
+
+    def redraw(self):
+        player = self.game.get_main_player()
+        screen = pygame.Surface((200, 100))
+
+        pygame.draw.rect(screen, (255, 0, 0),
+                         [6, 6, 188 * player.get_health() // player.get_max_health(), 18])
+
+        pygame.draw.rect(screen, (0, 0, 255),
+                         [6, 56, 188 * player.get_mana() // player.get_max_mana(), 18])
+
+        screen.blit(self.attribute_bar_pixmap, (0, 0))
+        screen.blit(self.attribute_bar_pixmap, (0, 50))
+
+        self.screen = screen
+
+
+class EffectWindow:
+    def __init__(self, game):
+        self.effect_window_pixmap = load_image("textures/gui/effect_window.png")
+
 
 class GUI:
     def __init__(self, game):
         self.game = game
+        
         self.inventory = Inventory(game)
+        self.attribute_bar = AttributeBar(game)
+        self.item_cell = ItemCell(game)
+
+    def get_inventory(self):
+        return self.inventory
+
+    def get_attribute_bar(self):
+        return self.attribute_bar
 
     def get_player_attributes(self):
         player = self.game.get_main_player()
@@ -126,22 +199,14 @@ class GUI:
     def draw(self):
         attrs = self.get_player_attributes()
 
-        indicators = pygame.Surface((SCREEN_SIZE[0] // 10,
-                                           SCREEN_SIZE[1] // 20), pygame.SRCALPHA)
+        indicators = self.attribute_bar.draw()
         
-        size = indicators.get_size()
-        
-        pygame.draw.rect(indicators, (255, 0, 0),
-                         [0, 0, size[0] * attrs[0][0] // attrs[1][0],
-                         size[1] // 3])
-
-        pygame.draw.rect(indicators, (0, 0, 255),
-                         [0, size[1] // 3 * 2, size[0] * attrs[0][1] // attrs[1][1],
-                         size[1] // 3])
-
         self.game.screen.blit(indicators, (30, 30))
         
         if self.game.get_gui_state():
             inventory = self.inventory.draw()
-            self.game.screen.blit(inventory, (30, SCREEN_SIZE[1] - 30 - inventory.get_rect().height))
+            self.game.screen.blit(inventory, (30, SCREEN_SIZE[1] - 30 - self.inventory.get_height()))
+        else:
+            cell = self.item_cell.draw()
+            self.game.screen.blit(cell, (30, SCREEN_SIZE[1] - 30 - self.item_cell.get_height()))
                 

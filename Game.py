@@ -1,4 +1,5 @@
 import pygame
+pygame.init()
 pygame.display.set_mode((1, 1))
 
 from BaseModule import *
@@ -10,7 +11,7 @@ from MagicModule import *
 
 
 class Game:
-    def __init__(self):
+    def __init__(self): 
         self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN | pygame.SRCALPHA)
 
         self.main_player = None
@@ -92,16 +93,21 @@ class Game:
         for obj in self.current_location.get_objects():
             obj.update()
 
-pygame.init()
 clock = pygame.time.Clock()
-fps = 60
-
 UGame = Game()
 pygame.display.update()
 
 FirstLocation = Location(UGame)
 FirstLocation.load(f"{locations_path}/FirstLocation.loc")
 UGame.load_location(FirstLocation)
+
+
+player = Player(100, 100, UGame)
+zombie = Zombie(200, 100, UGame)
+
+UGame.set_main_player(player)
+UGame.spawn_object(UGame.get_main_player())
+UGame.spawn_object(zombie)
 
 GameDrawer = Drawer(UGame)
 UGame.set_main_drawer(GameDrawer)
@@ -111,13 +117,6 @@ UGame.set_main_event_handler(GameEventHandler)
 
 GameGUI = GUI(UGame)
 UGame.set_main_gui(GameGUI)
-
-player = Player(100, 100, UGame)
-zombie = Zombie(200, 100, UGame)
-
-UGame.set_main_player(player)
-UGame.spawn_object(UGame.get_main_player())
-#UGame.spawn_object(zombie)
 
 ###
 def damage(obj):
@@ -132,7 +131,7 @@ while True:
         UGame.update()
         UGame.draw()
         pygame.event.pump()
-        clock.tick(fps)
+        clock.tick(FPS)
     except pygame.error:
         break
 pygame.quit()

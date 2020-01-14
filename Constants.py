@@ -1,7 +1,10 @@
 import pygame
 
+FPS = 60
+
 CELL_SIZE = 64
 SCREEN_SIZE = (1920, 1080)
+LABEL_COLOR = (186, 111, 0)
 
 LEFT_DRAW_SIDE = SCREEN_SIZE[0] // 2 - 100
 RIGHT_DRAW_SIDE = SCREEN_SIZE[0] // 2 + 100
@@ -20,3 +23,5 @@ def load_image(path, color_key=None):
     else:
         image = image.convert_alpha()
     return image
+
+MagicFont = pygame.font.Font("fonts/Magic.ttf", 23)

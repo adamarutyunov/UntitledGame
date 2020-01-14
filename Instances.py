@@ -1,0 +1,2 @@
+from MagicModule import *
+

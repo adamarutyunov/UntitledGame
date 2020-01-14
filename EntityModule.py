@@ -59,15 +59,19 @@ class Entity(GameObject):
 
     def set_health(self, health):
         self.health = health
+        self.game.get_main_gui().get_attribute_bar().redraw()
 
     def set_mana(self, mana):
         self.mana = mana
+        self.game.get_main_gui().get_attribute_bar().redraw()
 
     def change_health(self, health):
         self.health += health
+        self.game.get_main_gui().get_attribute_bar().redraw()
 
     def change_mana(self, mana):
         self.mana += mana
+        self.game.get_main_gui().get_attribute_bar().redraw()
 
     def get_strength_characteristic(self):
         return self.strength_characteristic
@@ -206,9 +210,6 @@ class Entity(GameObject):
     def affect_effect(self, effect):
         self.effects.append(effect)
 
-    def get_damage(self, damage):
-        self.health -= damage
-
     def get_attacked_enemies(self, attack_range):
         attacked_enemies = []
         enemies = self.game.get_objects()
@@ -226,11 +227,6 @@ class Entity(GameObject):
         current_item = self.inventory[self.current_item_index]
 
         if type(current_item) is None:
-            return
-        if type(current_item) is Weapon:
-            enemies = self.get_attacked_enemies(current_item.get_attack_radius())
-            for e in enemies:
-                current_item.use(e)
             return
 
         current_item.use(self)
@@ -337,7 +333,7 @@ class Zombie(Entity):
         
         if distance_to_nearest_player <= self.attack_radius:
             if self.current_cooldown <= 0:
-                nearest_player.get_damage(self.power)
+                nearest_player.change_health(-self.power)
                 self.current_cooldown = self.attack_cooldown
         elif distance_to_nearest_player <= self.vision_radius:
             dx = self.centerx - nearest_player.centerx

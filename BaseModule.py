@@ -81,3 +81,7 @@ class Weapon(Item):
 
     def set_attack_radiue(self, attack_radius):
         self.attack_radius = attack_radius
+
+    def use(self, obj):
+        for e in obj.get_attacked_enemies(self.get_attack_radius()):
+            super().use(obj)
