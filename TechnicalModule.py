@@ -159,7 +159,7 @@ class AttributeBar(GUIModule):
 
     def redraw(self):
         player = self.game.get_main_player()
-        screen = pygame.Surface((200, 100))
+        screen = pygame.Surface((200, 100), pygame.SRCALPHA)
 
         pygame.draw.rect(screen, (255, 0, 0),
                          [6, 6, 188 * player.get_health() // player.get_max_health(), 18])
@@ -173,9 +173,33 @@ class AttributeBar(GUIModule):
         self.screen = screen
 
 
-class EffectWindow:
+class EffectsWindow(GUIModule):
     def __init__(self, game):
-        self.effect_window_pixmap = load_image("textures/gui/effect_window.png")
+        self.effect_window_pixmap = load_image("textures/gui/effects_window.png")
+        super().__init__(self.effect_window_pixmap, game)
+
+        self.label = MagicFont.render("Effects", True, LABEL_COLOR)
+        self.label_rect = self.label.get_rect()
+
+        self.redraw()
+
+    def redraw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+        pygame.draw.rect(screen, (0, 0, 0, 127), (0, 0, self.width, self.height))
+ 
+        screen.blit(self.effect_window_pixmap, (0, 0))
+        screen.blit(self.label, (self.width // 2 - self.label_rect.width // 2, 6))
+
+        for i, effect in enumerate(self.game.get_main_player().get_effects()):
+            icon = effect.get_icon()
+            if icon:
+                screen.blit(icon, (15, i * 25 + 40))
+            label = MagicFont.render(effect.get_title(), True, LABEL_COLOR)
+            screen.blit(label, (46, i * 25 + 42))
+
+        self.screen = screen
+        
 
 
 class GUI:
@@ -185,6 +209,7 @@ class GUI:
         self.inventory = Inventory(game)
         self.attribute_bar = AttributeBar(game)
         self.item_cell = ItemCell(game)
+        self.effects_window = EffectsWindow(game)
 
     def get_inventory(self):
         return self.inventory
@@ -192,20 +217,35 @@ class GUI:
     def get_attribute_bar(self):
         return self.attribute_bar
 
-    def get_player_attributes(self):
-        player = self.game.get_main_player()
-        return (player.get_health(), player.get_mana()), (player.get_max_health(), player.get_max_mana())
+    def get_item_cell(self):
+        return self.item_cell
+
+    def get_effects_window(self):
+        return self.effects_window
+
+    def update_inventory(self):
+        self.inventory.redraw()
+
+    def update_attribute_bar(self):
+        self.attribute_bar.redraw()
+
+    def update_item_cell(self):
+        self.item_cell.redraw()
+
+    def update_effects_window(self):
+        self.effects_window.redraw()
     
     def draw(self):
-        attrs = self.get_player_attributes()
-
         indicators = self.attribute_bar.draw()
-        
         self.game.screen.blit(indicators, (30, 30))
         
         if self.game.get_gui_state():
             inventory = self.inventory.draw()
             self.game.screen.blit(inventory, (30, SCREEN_SIZE[1] - 30 - self.inventory.get_height()))
+
+            effects = self.effects_window.draw()
+            self.game.screen.blit(effects, (30, SCREEN_SIZE[1] - 30 - self.inventory.get_height() - 30 - self.effects_window.get_height()))
+            
         else:
             cell = self.item_cell.draw()
             self.game.screen.blit(cell, (30, SCREEN_SIZE[1] - 30 - self.item_cell.get_height()))

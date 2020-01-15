@@ -124,6 +124,10 @@ def damage(obj):
 
 weapon = Weapon(200, damage)
 player.get_item(weapon)
+
+my_effect = DecreaseHealthEffect(600, 0.1)
+my_effect.set_title("Отпирание прохода Линада Веабаба")
+player.affect_effect(my_effect)
 ###
 
 while True:

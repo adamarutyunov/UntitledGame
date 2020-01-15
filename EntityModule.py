@@ -59,19 +59,19 @@ class Entity(GameObject):
 
     def set_health(self, health):
         self.health = health
-        self.game.get_main_gui().get_attribute_bar().redraw()
+        self.game.get_main_gui().update_attribute_bar()
 
     def set_mana(self, mana):
         self.mana = mana
-        self.game.get_main_gui().get_attribute_bar().redraw()
+        self.game.get_main_gui().update_attribute_bar()
 
     def change_health(self, health):
         self.health += health
-        self.game.get_main_gui().get_attribute_bar().redraw()
+        self.game.get_main_gui().update_attribute_bar()
 
     def change_mana(self, mana):
         self.mana += mana
-        self.game.get_main_gui().get_attribute_bar().redraw()
+        self.game.get_main_gui().update_attribute_bar()
 
     def get_strength_characteristic(self):
         return self.strength_characteristic
@@ -209,6 +209,10 @@ class Entity(GameObject):
 
     def affect_effect(self, effect):
         self.effects.append(effect)
+        self.game.get_main_gui().update_effects_window()
+
+    def get_effects(self):
+        return self.effects
 
     def get_attacked_enemies(self, attack_range):
         attacked_enemies = []

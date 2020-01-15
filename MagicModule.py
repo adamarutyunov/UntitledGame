@@ -68,29 +68,33 @@ class Effect:
         return self.icon
 
 
-class IncreaseHealthEffect:
+class IncreaseHealthEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Повышение здоровья на {value} на {duration / FPS} секунд")
         self.value = value
         
         super().__init__(duration, self.mid_function)
 
+        self.load_icon(load_image("textures/effects/health_increase_effect.png"))
+
     def mid_function(self, obj):
         obj.change_health(self.value)
 
 
-class DecreaseHealthEffect:
+class DecreaseHealthEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Снижение здоровья на {value} на {duration / FPS} секунд")
         self.value = value
         
         super().__init__(duration, self.mid_function)
 
+        self.load_icon(load_image("textures/effects/health_decrease_effect.png"))
+
     def mid_function(self, obj):
         obj.change_health(-self.value)
 
 
-class IncreaseManaEffect:
+class IncreaseManaEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Повышение магии на {value} на {duration / FPS} секунд")
         self.value = value
@@ -101,7 +105,7 @@ class IncreaseManaEffect:
         obj.change_mana(self.value)
 
 
-class DecreaseManaEffect:
+class DecreaseManaEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Снижение магии на {value} на {duration / FPS} секунд")
         self.value = value
@@ -112,7 +116,7 @@ class DecreaseManaEffect:
         obj.change_mana(-self.value)
 
 
-class IncreaseIntelligenceEffect:
+class IncreaseIntelligenceEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Повышение интеллекта на {value} на {duration / FPS} секунд")
         self.value = value
@@ -126,7 +130,7 @@ class IncreaseIntelligenceEffect:
         obj.change_intelligence_characteristic(-self.value)
 
 
-class DecreaseIntelligenceEffect:
+class DecreaseIntelligenceEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Снижение интеллекта на {value} на {duration / FPS} секунд")
         self.value = value
@@ -140,7 +144,7 @@ class DecreaseIntelligenceEffect:
         obj.change_intelligence_characteristic(self.value)
 
 
-class IncreaseStrengthEffect:
+class IncreaseStrengthEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Увеличение силы на {value} на {duration / FPS} секунд")
         self.value = value
@@ -154,7 +158,7 @@ class IncreaseStrengthEffect:
         obj.change_strength_characteristic(-self.value)
 
 
-class DecreaseStrengthEffect:
+class DecreaseStrengthEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Уменьшение силы на {value} на {duration / FPS} секунд")
         self.value = value
@@ -168,7 +172,7 @@ class DecreaseStrengthEffect:
         obj.change_strength_characteristic(self.value)
 
 
-class IncreaseSpeedEffect:
+class IncreaseSpeedEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Повышение скорости на {value} на {duration / FPS} секунд")
         self.value = value
@@ -182,7 +186,7 @@ class IncreaseSpeedEffect:
         obj.change_speed_characteristic(-self.value)
 
 
-class DecreaseSpeedEffect:
+class DecreaseSpeedEffect(Effect):
     def __init__(self, duration, value):
         self.set_description(f"Снижение скорости на {value} на {duration / FPS} секунд")
         self.value = value
