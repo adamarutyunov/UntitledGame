@@ -94,6 +94,7 @@ class GUIModule:
         
         self.pixmap = pixmap
         self.rect = self.pixmap.get_rect()
+        self.context_menu_size = (0, 0)
         
         self.width = self.rect.width
         self.height = self.rect.height
@@ -105,6 +106,12 @@ class GUIModule:
 
     def get_height(self):
         return self.height
+
+    def get_context_menu_size(self):
+        return self.context_menu_size
+
+    def set_context_menu_size(self, w, h):
+        self.context_menu_size = (w, h)
 
     def redraw(self):
         pass
@@ -158,6 +165,8 @@ class AttributeBar(GUIModule):
         self.attribute_bar_pixmap = load_image("textures/gui/attribute_bar.png")
         super().__init__(self.attribute_bar_pixmap, game)
 
+        self.set_context_menu_size(200, 40)
+
         self.redraw()
 
     def redraw(self):
@@ -175,6 +184,28 @@ class AttributeBar(GUIModule):
 
         self.screen = screen
 
+    def get_context_menu(self, x, y):
+        if 24 < y < 56 or y < 0 or y > 100 or x < 0 or x > self.get_width():
+            return None
+
+        player = self.game.get_main_player()
+
+        context_menu = pygame.Surface(self.context_menu_size, pygame.SRCALPHA)
+
+        pygame.draw.rect(context_menu, (0, 0, 0), (0, 0, *self.context_menu_size))
+        pygame.draw.rect(context_menu, BORDER_COLOR, (0, 0, *self.context_menu_size), 2)
+
+        if y <= 24:
+            text = MagicFont.render(f"{ceil(player.get_health())}/{ceil(player.get_max_health())}", True, LABEL_COLOR)
+        elif y >= 56:
+            text = MagicFont.render(f"{ceil(player.get_mana())}/{ceil(player.get_max_mana())}", True, LABEL_COLOR)
+
+        context_menu.blit(text, (self.context_menu_size[0] // 2 - text.get_rect().width // 2, 10))
+
+        return context_menu
+
+        
+
 
 class EffectsWindow(GUIModule):
     def __init__(self, game):
@@ -184,7 +215,7 @@ class EffectsWindow(GUIModule):
         self.label = MagicFont.render("Effects", True, LABEL_COLOR)
         self.label_rect = self.label.get_rect()
 
-        self.context_menu_size = (500, 70)
+        self.set_context_menu_size(500, 70)
 
         self.redraw()
 
@@ -206,9 +237,6 @@ class EffectsWindow(GUIModule):
             screen.blit(label, (46, i * 25 + 42))
 
         self.screen = screen
-
-    def get_context_menu_size(self):
-        return self.context_menu_size
 
     def get_context_menu(self, x, y):
         if x < 11 or x > 682 or y > 412 or y < 36:
@@ -238,7 +266,6 @@ class EffectsWindow(GUIModule):
         
 
         return context_menu
-        
 
 
 class GUI:
@@ -312,5 +339,5 @@ class GUI:
 
         if self.context_menu is not None:
             self.game.screen.blit(self.context_menu, (self.mouse_x - self.context_menu.get_rect().width // 2,
-                                                      self.mouse_y - 120))
+                                                      self.mouse_y - self.context_menu.get_rect().height - 10))
                 

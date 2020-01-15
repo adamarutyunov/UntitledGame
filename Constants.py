@@ -1,4 +1,5 @@
 import pygame
+from math import ceil
 
 FPS = 60
 
