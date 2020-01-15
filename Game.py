@@ -127,12 +127,21 @@ player.get_item(weapon)
 
 my_effect = DecreaseHealthEffect(600, 0.1)
 my_effect.set_title("Отпирание прохода Линада Веабаба")
+my_effect2 = IncreaseHealthEffect(300, 0.05)
 player.affect_effect(my_effect)
+player.affect_effect(my_effect2)
+player.affect_effect(my_effect)
+player.affect_effect(my_effect2)
+player.affect_effect(my_effect)
+player.affect_effect(my_effect2)
 ###
 
 while True:
     try:
-        UGame.update()
+        UGame.get_main_gui().update()
+        UGame.get_main_event_handler().process_events()
+        if not UGame.get_gui_state():
+            UGame.update()
         UGame.draw()
         pygame.event.pump()
         clock.tick(FPS)

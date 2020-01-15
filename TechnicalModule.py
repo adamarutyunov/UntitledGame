@@ -112,6 +112,9 @@ class GUIModule:
     def draw(self):
         return self.screen
 
+    def get_context_menu(self, x, y):
+        return None
+
 
 class Inventory(GUIModule):
     def __init__(self, game):
@@ -181,6 +184,8 @@ class EffectsWindow(GUIModule):
         self.label = MagicFont.render("Effects", True, LABEL_COLOR)
         self.label_rect = self.label.get_rect()
 
+        self.context_menu_size = (500, 70)
+
         self.redraw()
 
     def redraw(self):
@@ -191,7 +196,9 @@ class EffectsWindow(GUIModule):
         screen.blit(self.effect_window_pixmap, (0, 0))
         screen.blit(self.label, (self.width // 2 - self.label_rect.width // 2, 6))
 
-        for i, effect in enumerate(self.game.get_main_player().get_effects()):
+        self.all_effects = self.game.get_main_player().get_effects()
+
+        for i, effect in enumerate(self.all_effects):
             icon = effect.get_icon()
             if icon:
                 screen.blit(icon, (15, i * 25 + 40))
@@ -199,6 +206,38 @@ class EffectsWindow(GUIModule):
             screen.blit(label, (46, i * 25 + 42))
 
         self.screen = screen
+
+    def get_context_menu_size(self):
+        return self.context_menu_size
+
+    def get_context_menu(self, x, y):
+        if x < 11 or x > 682 or y > 412 or y < 36:
+            return None
+
+        row = ((y - 36) // 25)
+        if row >= len(self.all_effects):
+            return None
+
+        selected_effect = self.all_effects[row]
+        context_menu = pygame.Surface(self.context_menu_size, pygame.SRCALPHA)
+
+        pygame.draw.rect(context_menu, (0, 0, 0), (0, 0, *self.context_menu_size))
+        pygame.draw.rect(context_menu, BORDER_COLOR, (0, 0, *self.context_menu_size), 2)
+
+        icon = selected_effect.get_icon()
+        title = selected_effect.get_title()
+        description = selected_effect.get_description()
+
+        title_pixmap = MagicFont.render(title, True, LABEL_COLOR)
+        description_pixmap = MagicFont.render(description, True, LABEL_COLOR)
+
+        context_menu.blit(title_pixmap, (self.context_menu_size[0] // 2 - title_pixmap.get_rect().width // 2, 10))
+        context_menu.blit(icon, (10, 38))
+
+        context_menu.blit(description_pixmap, (40, 42))
+        
+
+        return context_menu
         
 
 
@@ -210,6 +249,8 @@ class GUI:
         self.attribute_bar = AttributeBar(game)
         self.item_cell = ItemCell(game)
         self.effects_window = EffectsWindow(game)
+
+        self.context_menu = None
 
     def get_inventory(self):
         return self.inventory
@@ -234,19 +275,42 @@ class GUI:
 
     def update_effects_window(self):
         self.effects_window.redraw()
+
+    def update(self):
+        x, y = pygame.mouse.get_pos()
+        self.mouse_x, self.mouse_y = x, y
+        if self.game.get_gui_state():
+            self.context_menu = (self.inventory.get_context_menu(x - INVENTORY_POS[0],
+                                                                 y - INVENTORY_POS[1]) or
+                                 self.attribute_bar.get_context_menu(x - ATTRIBUTE_BAR_POS[0],
+                                                                     y - ATTRIBUTE_BAR_POS[1]) or
+                                 self.item_cell.get_context_menu(x - ITEM_CELL_POS[0],
+                                                                 y - ITEM_CELL_POS[1]) or
+                                 self.effects_window.get_context_menu(x - EFFECTS_WINDOW_POS[0],
+                                                                      y - EFFECTS_WINDOW_POS[1]))
+        else:
+            self.context_menu = (self.attribute_bar.get_context_menu(x - ATTRIBUTE_BAR_POS[0],
+                                                                     y - ATTRIBUTE_BAR_POS[1]) or
+                                 self.item_cell.get_context_menu(x - ITEM_CELL_POS[0],
+                                                                 y - ITEM_CELL_POS[1]))
+            
+        
     
     def draw(self):
         indicators = self.attribute_bar.draw()
-        self.game.screen.blit(indicators, (30, 30))
+        self.game.screen.blit(indicators, ATTRIBUTE_BAR_POS)
         
         if self.game.get_gui_state():
             inventory = self.inventory.draw()
-            self.game.screen.blit(inventory, (30, SCREEN_SIZE[1] - 30 - self.inventory.get_height()))
+            self.game.screen.blit(inventory, INVENTORY_POS)
 
             effects = self.effects_window.draw()
-            self.game.screen.blit(effects, (30, SCREEN_SIZE[1] - 30 - self.inventory.get_height() - 30 - self.effects_window.get_height()))
-            
+            self.game.screen.blit(effects, (EFFECTS_WINDOW_POS))
         else:
             cell = self.item_cell.draw()
-            self.game.screen.blit(cell, (30, SCREEN_SIZE[1] - 30 - self.item_cell.get_height()))
+            self.game.screen.blit(cell, ITEM_CELL_POS)
+
+        if self.context_menu is not None:
+            self.game.screen.blit(self.context_menu, (self.mouse_x - self.context_menu.get_rect().width // 2,
+                                                      self.mouse_y - 120))
                 

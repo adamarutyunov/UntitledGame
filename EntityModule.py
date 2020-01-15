@@ -196,7 +196,8 @@ class Entity(GameObject):
 
         for effect in self.effects:
             effect.run(self)
-        self.effects = list(filter(lambda x: x.is_active(), self.effects))
+            if not effect.is_active():
+                self.remove_effect(effect)
 
         if self.mana < 0:
             self.mana = 0
@@ -208,8 +209,13 @@ class Entity(GameObject):
             self.game.get_objects().remove(self)
 
     def affect_effect(self, effect):
-        self.effects.append(effect)
+        self.effects.append(effect.copy())
         self.game.get_main_gui().update_effects_window()
+
+    def remove_effect(self, effect):
+        if effect in self.effects:
+            self.effects.remove(effect)
+            self.game.get_main_gui().update_effects_window()
 
     def get_effects(self):
         return self.effects
