@@ -365,9 +365,13 @@ class Zombie(Entity):
     def __init__(self, x, y, game):
         super().__init__(x, y, 51, 105, [0, 0], game)
 
-        self.set_strength_characteristic(5)
-        self.set_speed_characteristic(5)
-        self.set_intelligence_characteristic(0)
+        self.pure_strength = 5
+        self.pure_speed = 5
+        self.pure_intelligence = 0
+
+        self.strength_characteristic = self.pure_strength
+        self.speed_characteristic = self.pure_speed
+        self.intelligence_characteristic = self.pure_intelligence
 
         self.recalculate_attributes()
         self.fill_attributes()

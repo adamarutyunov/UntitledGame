@@ -99,4 +99,4 @@ class Weapon(Item):
 
     def use(self, obj):
         for e in obj.get_attacked_enemies(self.get_attack_radius()):
-            super().use(obj)
+            super().use(e)

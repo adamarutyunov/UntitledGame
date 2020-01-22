@@ -114,11 +114,12 @@ UGame.load_location(FirstLocation)
 
 
 player = Player(100, 100, UGame)
-zombie = Zombie(200, 100, UGame)
 
 UGame.set_main_player(player)
 UGame.spawn_object(UGame.get_main_player())
-#UGame.spawn_object(zombie)
+UGame.spawn_object(Zombie(500, 100, UGame))
+UGame.spawn_object(Zombie(300, 300, UGame))
+UGame.spawn_object(Zombie(100, 500, UGame))
 
 
 
@@ -136,8 +137,8 @@ player.get_item(HealthUpPotion())
 player.get_item(StrengthUpPotion())
 player.get_item(IntelligenceUpPotion())
 
-my_effect = DecreaseStrengthEffect(600, 10)
-my_effect.set_title("Отпирание прохода Линада Веабаба")
+my_effect = DecreaseHealthEffect(600, 0.02)
+my_effect.set_title("Зелье снижения здоровья")
 player.affect_effect(my_effect)
 
 GameGUI.redraw_all()
