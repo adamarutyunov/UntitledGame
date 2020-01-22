@@ -100,9 +100,28 @@ class Entity(GameObject):
     def change_intelligence_characteristic(self, intelligence):
         self.intelligence_characteristic += intelligence
 
+    def get_basic_strength(self):
+        return self.pure_strength
+
+    def get_basic_speed(self):
+        return self.pure_speed
+
+    def get_basic_intelligence(self):
+        return self.pure_intelligence
+
     def fill_attributes(self):
         self.health = self.get_max_health()
         self.mana = self.get_max_mana()
+
+    def recalculate_attributes(self):
+        self.set_max_mana(self.intelligence_characteristic * 3)
+        self.set_max_speed(self.speed_characteristic / 3)
+        self.set_max_health(self.strength_characteristic * 3)
+
+    def set_pure_attributes(self):
+        self.set_strength_characteristic(self.pure_strength)
+        self.set_speed_characteristic(self.pure_speed)
+        self.set_intelligence_characteristic(self.pure_intelligence)
 
     def get_move_state(self):
         return self.move_state
@@ -166,12 +185,20 @@ class Entity(GameObject):
         if not None in self.inventory:
             return
         self.inventory[self.inventory.index(None)] = item
+        self.game.get_main_gui().update_inventory()
+        self.game.get_main_gui().update_item_cell()
 
     def remove_item(self, item):
+        if item not in self.inventory:
+            return
         self.inventory.remove(item)
+        self.game.get_main_gui().update_inventory()
+        self.game.get_main_gui().update_item_cell()
 
     def update(self):
         super().update()
+
+        self.set_pure_attributes()
         last_x, last_y = self.center
 
         walls = list(filter(lambda x: not x.transition, pygame.sprite.spritecollide(self, self.game.get_environment_objects(), False)))
@@ -208,6 +235,8 @@ class Entity(GameObject):
         if self.get_health() <= 0:
             self.game.get_objects().remove(self)
 
+        self.recalculate_attributes()
+
     def affect_effect(self, effect):
         self.effects.append(effect.copy())
         self.game.get_main_gui().update_effects_window()
@@ -234,12 +263,34 @@ class Entity(GameObject):
         return attacked_enemies
 
     def use_current_item(self):
-        current_item = self.inventory[self.current_item_index]
+        current_item = self.get_current_item()
 
-        if type(current_item) is None:
+        if current_item is None:
             return
 
         current_item.use(self)
+
+    def get_item_by_index(self, i):
+        return self.inventory[i]
+
+    def get_current_item(self):
+        return self.inventory[self.current_item_index]
+
+    def next_item(self):
+        self.current_item_index += 1
+        self.current_item_index %= len(self.inventory)
+        self.game.get_main_gui().update_item_cell()
+
+    def prev_item(self):
+        self.current_item_index -= 1
+        self.current_item_index %= len(self.inventory)
+        self.game.get_main_gui().update_item_cell()
+
+    def get_inventory(self):
+        return self.inventory
+
+    def attack_enemy(self, enemy, basic_damage):
+        enemy.change_health(basic_damage * (1 + self.strength_characteristic * 3 / 100))
         
 
 class Player(Entity):
@@ -249,14 +300,20 @@ class Player(Entity):
         self.x_delta = 0
         self.y_delta = 0
 
-        self.set_max_health(100)
-        self.set_max_mana(100)
-        self.set_max_speed(5)
+        self.pure_strength = 15
+        self.pure_speed = 15
+        self.pure_intelligence = 15
 
+        self.strength_characteristic = self.pure_strength
+        self.speed_characteristic = self.pure_speed
+        self.intelligence_characteristic = self.pure_intelligence
+
+        self.recalculate_attributes()
         self.fill_attributes()
 
         self.texture_path = "textures/player/"
         self.load_pixmaps()
+        self.calculate_current_pixmap()
 
     def load_pixmaps(self):
         def gtn(name):
@@ -306,12 +363,13 @@ class Player(Entity):
 
 class Zombie(Entity):
     def __init__(self, x, y, game):
-        super().__init__(x, y, 60, 60, [0, 0], game)
+        super().__init__(x, y, 51, 105, [0, 0], game)
 
-        self.set_max_health(50)
-        self.set_max_mana(100)
-        self.set_max_speed(2)
+        self.set_strength_characteristic(5)
+        self.set_speed_characteristic(5)
+        self.set_intelligence_characteristic(0)
 
+        self.recalculate_attributes()
         self.fill_attributes()
 
         self.vision_radius = 500
@@ -322,14 +380,44 @@ class Zombie(Entity):
         self.current_cooldown = 0
 
         self.targets = [Player]
+        self.texture_path = "textures/zombie/"
+        self.load_pixmaps()
+        self.calculate_current_pixmap()
+
+        
 
     def draw(self):
         screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        pygame.draw.circle(screen,
-                           (255, 0, 0),
-                           (30, 30),
-                           round(self.width / 2))
+        screen.blit(self.pixmaps[self.current_pixmap_index][self.pixmap_ticks // 10 % 2],
+                    (0, 0))
         return screen
+    
+    def load_pixmaps(self):
+        def gtn(name):
+            return self.texture_path + name + ".png"
+        
+        self.pixmaps[0] = [load_image(gtn("zombie_up_1"), -1),
+                           load_image(gtn("zombie_up_2"), -1)]
+        self.pixmaps[1] = [load_image(gtn("zombie_right_1"), -1),
+                           load_image(gtn("zombie_right_2"), -1)]
+        self.pixmaps[2] = [load_image(gtn("zombie_down_1"), -1),
+                           load_image(gtn("zombie_down_2"), -1)]
+        self.pixmaps[3] = [load_image(gtn("zombie_left_1"), -1),
+                           load_image(gtn("zombie_left_2"), -1)]
+
+    def calculate_current_pixmap(self):
+        move_state = self.get_move_state()
+
+        if abs(self.speed[0]) >= abs(self.speed[1]):
+            if move_state[0] == 1:
+                self.current_pixmap_index = 1
+            elif move_state[0] == -1:
+                self.current_pixmap_index = 3
+        else:
+            if move_state[1] == 1:
+                self.current_pixmap_index = 2
+            elif move_state[1] == -1:
+                self.current_pixmap_index = 0
         
     def update(self):
         enemies = list(filter(lambda x: type(x) in self.targets, self.game.get_objects()))
@@ -362,4 +450,6 @@ class Zombie(Entity):
             self.current_cooldown -= 1
 
         super().update()
+
+        self.calculate_current_pixmap()
 

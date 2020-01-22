@@ -123,72 +123,56 @@ class DecreaseManaEffect(Effect):
 
 class IncreaseIntelligenceEffect(Effect):
     def __init__(self, duration, value):
-        super().__init__(duration, lambda _: None, self.start_function, self.end_function)
-        
+        super().__init__(duration, self.mid_function)        
         self.set_description(f"Повышение интеллекта на {value} на {duration / FPS} секунд")
         self.value = value
 
-    def start_function(self, obj):
+    def mid_function(self, obj):
         obj.change_intelligence_characteristic(self.value)
-
-    def end_function(self, obj):
-        obj.change_intelligence_characteristic(-self.value)
 
 
 class DecreaseIntelligenceEffect(Effect):
     def __init__(self, duration, value):
-        super().__init__(duration, lambda _: None, self.start_function, self.end_function)
+        super().__init__(duration, self.mid_function)
         
         self.set_description(f"Снижение интеллекта на {value} на {duration / FPS} секунд")
         self.value = value
 
-    def start_function(self, obj):
+    def mid_function(self, obj):
         obj.change_intelligence_characteristic(-self.value)
-
-    def end_function(self, obj):
-        obj.change_intelligence_characteristic(self.value)
 
 
 class IncreaseStrengthEffect(Effect):
     def __init__(self, duration, value):
-        super().__init__(duration, lambda _: None, self.start_function, self.end_function)
+        super().__init__(duration, self.mid_function)
         
         self.set_description(f"Увеличение силы на {value} на {duration / FPS} секунд")
         self.value = value
 
-    def start_function(self, obj):
+    def mid_function(self, obj):
         obj.change_strength_characteristic(self.value)
-
-    def end_function(self, obj):
-        obj.change_strength_characteristic(-self.value)
 
 
 class DecreaseStrengthEffect(Effect):
     def __init__(self, duration, value):
-        super().__init__(duration, lambda _: None, self.start_function, self.end_function)
+        super().__init__(duration, self.mid_function)
         
         self.set_description(f"Уменьшение силы на {value} на {duration / FPS} секунд")
         self.value = value
 
-    def start_function(self, obj):
+    def mid_function(self, obj):
         obj.change_strength_characteristic(-self.value)
-
-    def end_function(self, obj):
-        obj.change_strength_characteristic(self.value)
 
 
 class IncreaseSpeedEffect(Effect):
     def __init__(self, duration, value):
-        super().__init__(duration, lambda _: None, self.start_function, self.end_function)
+        super().__init__(duration, self.mid_function)
         
         self.set_description(f"Повышение скорости на {value} на {duration / FPS} секунд")
         self.value = value
 
-    def start_function(self, obj):
+    def mid_function(self, obj):
         obj.change_speed_characteristic(self.value)
-
-    def end_function(self, obj):
-        obj.change_speed_characteristic(-self.value)
 
 
 class DecreaseSpeedEffect(Effect):
@@ -198,11 +182,8 @@ class DecreaseSpeedEffect(Effect):
         self.set_description(f"Снижение скорости на {value} на {duration / FPS} секунд")
         self.value = value
 
-    def start_function(self, obj):
+    def mid_function(self, obj):
         obj.change_speed_characteristic(-self.value)
-
-    def end_function(self, obj):
-        obj.change_speed_characteristic(self.value)
 
 
 

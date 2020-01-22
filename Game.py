@@ -8,6 +8,7 @@ from LocationModule import *
 from TechnicalModule import *
 from EntityModule import *
 from MagicModule import *
+from Instances import *
 
 
 class Game:
@@ -65,6 +66,7 @@ class Game:
     def load_location(self, location):
         self.current_location = location
         self.size = self.current_location.get_pixel_size()
+        self.main_drawer.set_location()
 
     def spawn_object(self, obj):
         self.current_location.spawn_object(obj)
@@ -97,6 +99,15 @@ clock = pygame.time.Clock()
 UGame = Game()
 pygame.display.update()
 
+GameDrawer = Drawer(UGame)
+UGame.set_main_drawer(GameDrawer)
+
+GameEventHandler = EventHandler(UGame)
+UGame.set_main_event_handler(GameEventHandler)
+
+GameGUI = GUI(UGame)
+UGame.set_main_gui(GameGUI)
+
 FirstLocation = Location(UGame)
 FirstLocation.load(f"{locations_path}/FirstLocation.loc")
 UGame.load_location(FirstLocation)
@@ -107,35 +118,30 @@ zombie = Zombie(200, 100, UGame)
 
 UGame.set_main_player(player)
 UGame.spawn_object(UGame.get_main_player())
-UGame.spawn_object(zombie)
+#UGame.spawn_object(zombie)
 
-GameDrawer = Drawer(UGame)
-UGame.set_main_drawer(GameDrawer)
 
-GameEventHandler = EventHandler(UGame)
-UGame.set_main_event_handler(GameEventHandler)
-
-GameGUI = GUI(UGame)
-UGame.set_main_gui(GameGUI)
 
 ###
 def damage(obj):
-    obj.get_damage(20)
+    obj.change_health(-20)
 
 weapon = Weapon(200, damage)
+weapon.set_name("Super Puper Duper Weapon")
+weapon.load_icon(load_image("textures/items/weapon/long_sword.png"))
 player.get_item(weapon)
 
-my_effect = DecreaseHealthEffect(600, 0.1)
-my_effect.set_title("Отпирание прохода Линада Веабаба")
-my_effect2 = IncreaseHealthEffect(300, 0.05)
-player.affect_effect(my_effect)
-player.affect_effect(my_effect2)
-player.affect_effect(my_effect)
-player.affect_effect(my_effect2)
-player.affect_effect(my_effect)
-player.affect_effect(my_effect2)
-###
+player.get_item(SpeedUpPotion())
+player.get_item(HealthUpPotion())
+player.get_item(StrengthUpPotion())
+player.get_item(IntelligenceUpPotion())
 
+my_effect = DecreaseStrengthEffect(600, 10)
+my_effect.set_title("Отпирание прохода Линада Веабаба")
+player.affect_effect(my_effect)
+
+GameGUI.redraw_all()
+###
 while True:
     try:
         UGame.get_main_gui().update()
@@ -147,5 +153,6 @@ while True:
         clock.tick(FPS)
     except pygame.error:
         break
+    GameGUI.redraw_all()
 pygame.quit()
     

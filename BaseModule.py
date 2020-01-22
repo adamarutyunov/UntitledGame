@@ -68,8 +68,23 @@ class Item:
         self.function = function
         self.name = name
 
+        self.icon = None
+
     def use(self, obj):
         self.function(obj)
+
+    def load_icon(self, icon):
+        self.icon = icon
+
+    def get_icon(self):
+        return self.icon
+
+    def set_name(self, name):
+        self.name = name
+
+    def get_name(self):
+        return self.name
+
 
 class Weapon(Item):
     def __init__(self, attack_radius, *args, **kwargs):
