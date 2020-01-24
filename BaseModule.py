@@ -1,11 +1,15 @@
 import pygame
+import math
+from Constants import *
+from MagicModule import *
 
 
 class GameObject:
-    def __init__(self, x, y, w, h, speed=[0, 0]):
+    def __init__(self, x, y, w, h, game=None, speed=[0, 0]):
         self.bounds = [x, y, w, h]
         self.update_rect()
         self.speed = speed
+        self.game = game
 
     @property
     def left(self):
@@ -100,3 +104,92 @@ class Weapon(Item):
     def use(self, obj):
         for e in obj.get_attacked_enemies(self.get_attack_radius()):
             super().use(e)
+
+
+class Particle(GameObject):
+    def __init__(self, x, y, w, h, time):
+        super().__init__(x, y, w, h)
+        self.pixmap_ticks = -1
+        self.time = time
+        self.ticks = 0
+
+    def load_pixmaps(self, pixmaps):
+        self.pixmaps = pixmaps
+
+    def is_active(self):
+        if self.ticks <= self.time:
+            return True
+        return False
+
+    def draw(self):
+        if self.is_active():
+            return self.pixmaps[self.pixmap_ticks]
+        return None
+
+    def update(self):
+        self.pixmap_ticks = self.ticks % len(self.pixmaps)
+        self.ticks += 1
+
+
+class HealthUpPotion(Item):
+    def __init__(self):
+        super().__init__(self.use, "Зелье лечения")
+
+        self.load_icon(load_image("textures/items/potions/health_up_potion.png"))
+
+    def use(self, obj):
+        effect = IncreaseHealthEffect(60, 0.5)
+        obj.affect_effect(effect)
+        obj.remove_item(self)
+
+
+class IntelligenceUpPotion(Item):
+    def __init__(self):
+        super().__init__(self.use, "Зелье интеллекта")
+
+        self.load_icon(load_image("textures/items/potions/intelligence_up_potion.png"))
+
+    def use(self, obj):
+        effect = IncreaseIntelligenceEffect(600, 10)
+        obj.affect_effect(effect)
+        obj.remove_item(self)
+
+
+class StrengthUpPotion(Item):
+    def __init__(self):
+        super().__init__(self.use, "Зелье силы")
+
+        self.load_icon(load_image("textures/items/potions/strength_up_potion.png"))
+
+    def use(self, obj):
+        effect = IncreaseStrengthEffect(600, 10)
+        obj.affect_effect(effect)
+        obj.remove_item(self)
+
+
+class SpeedUpPotion(Item):
+    def __init__(self):
+        super().__init__(self.use, "Зелье скорости")
+
+        self.load_icon(load_image("textures/items/potions/speed_up_potion.png"))
+
+    def use(self, obj):
+        effect = IncreaseSpeedEffect(600, 10)
+        obj.affect_effect(effect)
+        obj.remove_item(self)
+
+
+class DamageParticle(Particle):
+    def __init__(self):
+        self.load_pixmaps([load_image("textures/damage/damage_1.png"),
+                             load_image("textures/damage/damage_2.png"),
+                             load_image("textures/damage/damage_3.png"),
+                             load_image("textures/damage/damage_4.png")])
+
+    def spawn(self, x, y, w, h, time):
+        p = Particle(x, y, w, h, time)
+        p.pixmaps = self.pixmaps
+        return p
+
+
+DamageParticleInstance = DamageParticle()

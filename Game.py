@@ -1,3 +1,4 @@
+import time
 import pygame
 pygame.init()
 pygame.display.set_mode((1, 1))
@@ -9,6 +10,7 @@ from TechnicalModule import *
 from EntityModule import *
 from MagicModule import *
 from Instances import *
+
 
 
 class Game:
@@ -75,7 +77,7 @@ class Game:
         self.current_location.spawn_ecvironment_object(obj)
 
     def draw(self):
-        self.main_drawer.draw(self.current_location.get_objects())
+        self.main_drawer.draw()
 
     def set_gui_state(self, state):
         self.gui_state = state
@@ -92,8 +94,10 @@ class Game:
     def update(self):
         self.main_event_handler.process_events()
         self.main_drawer.update_drawdeltas()
-        for obj in self.current_location.get_objects():
-            obj.update()
+        self.current_location.update()
+
+    def delete_object(self, obj):
+        self.current_location.remove_object(obj)
 
 clock = pygame.time.Clock()
 UGame = Game()
@@ -110,6 +114,11 @@ UGame.set_main_gui(GameGUI)
 
 FirstLocation = Location(UGame)
 FirstLocation.load(f"{locations_path}/FirstLocation.loc")
+SecondLocation = Location(UGame)
+SecondLocation.load(f"{locations_path}/SecondLocation.loc")
+
+FirstLocation.spawn_object(Door(300, 0, UGame, SecondLocation, (0, 0)))
+SecondLocation.spawn_object(Door(0, 200, UGame, FirstLocation, (0, 0)))
 UGame.load_location(FirstLocation)
 
 
@@ -120,6 +129,8 @@ UGame.spawn_object(UGame.get_main_player())
 UGame.spawn_object(Zombie(500, 100, UGame))
 UGame.spawn_object(Zombie(300, 300, UGame))
 UGame.spawn_object(Zombie(100, 500, UGame))
+fb = Fireball(100, 100, UGame, [5, 1])
+UGame.spawn_object(fb)
 
 
 
@@ -137,23 +148,39 @@ player.get_item(HealthUpPotion())
 player.get_item(StrengthUpPotion())
 player.get_item(IntelligenceUpPotion())
 
-my_effect = DecreaseHealthEffect(600, 0.02)
+my_effect = DecreaseHealthEffect(60, 0.05)
 my_effect.set_title("Зелье снижения здоровья")
 player.affect_effect(my_effect)
 
 GameGUI.redraw_all()
-###
+cur_time = time.time()
+
+fm = FireballMagic()
+player.add_magic(fm)
 while True:
     try:
         UGame.get_main_gui().update()
         UGame.get_main_event_handler().process_events()
         if not UGame.get_gui_state():
             UGame.update()
+    
         UGame.draw()
+
+        new_time = time.time()
+        try:
+            dif = int(1 / (new_time - cur_time))
+            fpss.append(dif)
+        except Exception as e:
+            pass
+        fps_pixmap = MagicFont.render(str(dif), False, (0, 255, 0))
+        UGame.screen.blit(fps_pixmap, (1920 - 30 - fps_pixmap.get_rect().width, 30))
+        
+        pygame.display.flip()
         pygame.event.pump()
         clock.tick(FPS)
+        cur_time = new_time
     except pygame.error:
         break
-    GameGUI.redraw_all()
+
 pygame.quit()
     

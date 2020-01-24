@@ -27,9 +27,11 @@ class Drawer:
     def get_dd_y(self):
         return self.drawdelta_y
 
-    def draw(self, objects):
-        self.screen.fill((0, 0, 0))
+    def draw(self):
+        pygame.draw.rect(self.screen, (0, 0, 0), (0, 0, 1920, 1080))
         self.screen.blit(self.location.draw(), (-self.drawdelta_x, -self.drawdelta_y))
+
+        objects = self.game.get_objects()
         for obj in objects:
             draw_surface = obj.draw()
             if draw_surface:
@@ -37,8 +39,6 @@ class Drawer:
                                                 obj.top - self.drawdelta_y))
 
         self.game.get_main_gui().draw()
-        
-        pygame.display.flip()
 
     def update_drawdeltas(self):
         player = self.game.get_main_player()
@@ -88,6 +88,9 @@ class EventHandler:
         
         if keys[pygame.K_TAB] and not self.last_keys[pygame.K_TAB]:
             self.game.toggle_gui()
+        if keys[pygame.K_r] and not self.last_keys[pygame.K_r]:
+            self.game.get_main_player().use_magic()
+            
 
 
 class GUIModule:
@@ -414,6 +417,9 @@ class GUI:
         self.effects_window = EffectsWindow(game)
         self.characteristics_window = CharacteristicsWindow(game)
 
+        self.hurt = pygame.Surface((1920, 1080))
+        pygame.draw.rect(self.hurt, (255, 0, 0), (0, 0, 1920, 1080))
+
         self.context_menu = None
 
     def get_inventory(self):
@@ -471,6 +477,16 @@ class GUI:
         
     
     def draw(self):
+        health = self.game.get_main_player().get_health()
+        max_health = self.game.get_main_player().get_max_health()
+        if health / max_health < 0.1:
+            koef = health / (max_health * 0.1)
+            self.hurt.set_alpha(255 * (1 - koef) // 1)
+        else:
+            self.hurt.set_alpha(0)
+
+        self.game.screen.blit(self.hurt, (0, 0))
+            
         indicators = self.attribute_bar.draw()
         self.game.screen.blit(indicators, ATTRIBUTE_BAR_POS)
         

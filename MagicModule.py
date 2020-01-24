@@ -2,11 +2,15 @@ from Constants import *
 
 
 class Magic:
-    def __init__(self, func):
+    def __init__(self, func, magic):
         self.func = func
+        self.need_magic = magic
 
-    def run(self):
-        self.func()  
+    def use(self, obj):
+        if obj.get_mana() >= self.need_magic:
+            obj.change_mana(-self.need_magic)
+            print(123)
+            self.func(obj)
 
 
 class Effect:
@@ -185,5 +189,5 @@ class DecreaseSpeedEffect(Effect):
     def mid_function(self, obj):
         obj.change_speed_characteristic(-self.value)
 
-
+        
 

@@ -66,7 +66,7 @@ class Location:
                                                  CELL_SIZE,
                                                  CELL_SIZE)
                 self.spawn_environment_object(self.data[i][j])
-        self.update()
+        self.redraw_location()
 
     def get_size(self):
         return self.width, self.height
@@ -74,7 +74,7 @@ class Location:
     def get_pixel_size(self):
         return self.screen.get_size()
 
-    def update(self):
+    def redraw_location(self):
         self.screen = pygame.Surface((self.width * CELL_SIZE,
                                       self.height * CELL_SIZE))
         for i in range(self.width):
@@ -84,6 +84,12 @@ class Location:
 
     def draw(self):
         return self.screen
+
+    def update(self):
+        for obj in self.objects:
+            if type(obj) is Particle and not obj.is_active():
+                self.remove_object(obj)
+            obj.update()
 
     def get_objects(self):
         return self.objects
@@ -96,6 +102,11 @@ class Location:
 
     def spawn_environment_object(self, obj):
         self.environment_objects.append(obj)
+
+    def remove_object(self, obj):
+        if obj in self.objects:
+            self.objects.remove(obj)
+
 
 field_textures_path = "textures/fields"
 GrassTexture = load_image(f"{field_textures_path}/GrassField.png")

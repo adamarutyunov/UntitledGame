@@ -2,13 +2,13 @@ import pygame
 from math import copysign
 from BaseModule import *
 from Constants import *
+from MagicModule import *
 
 
 class Entity(GameObject):
     def __init__(self, x, y, w, h, speed, game):
-        super().__init__(x, y, w, h, speed)
-        self.game = game
-
+        super().__init__(x, y, w, h, game, speed)
+        
         self.max_speed = 0
         self.max_health = 0
         self.max_mana = 0
@@ -17,8 +17,12 @@ class Entity(GameObject):
         self.mana = 0
 
         self.effects = []
+
         self.inventory = [None] * 28
         self.current_item_index = 0
+
+        self.magic = []
+        self.current_magic_index = 0
 
         self.strength_characteristic = 0
         self.speed_characteristic = 0
@@ -69,6 +73,11 @@ class Entity(GameObject):
         self.health += health
         self.game.get_main_gui().update_attribute_bar()
 
+        if health < 0:
+            self.game.spawn_object(DamageParticleInstance.spawn(self.left, self.top,
+                                                                self.width, self.height,
+                                                                5))
+
     def change_mana(self, mana):
         self.mana += mana
         self.game.get_main_gui().update_attribute_bar()
@@ -93,12 +102,15 @@ class Entity(GameObject):
 
     def change_strength_characteristic(self, strength):
         self.strength_characteristic += strength
+        self.game.get_main_gui().update_characteristics_window()
 
     def change_speed_characteristic(self, speed):
         self.speed_characteristic += speed
+        self.game.get_main_gui().update_characteristics_window()
 
     def change_intelligence_characteristic(self, intelligence):
         self.intelligence_characteristic += intelligence
+        self.game.get_main_gui().update_characteristics_window()
 
     def get_basic_strength(self):
         return self.pure_strength
@@ -117,6 +129,9 @@ class Entity(GameObject):
         self.set_max_mana(self.intelligence_characteristic * 3)
         self.set_max_speed(self.speed_characteristic / 3)
         self.set_max_health(self.strength_characteristic * 3)
+
+        self.health = min(self.health, self.max_health)
+        self.mana = min(self.mana, self.max_mana) 
 
     def set_pure_attributes(self):
         self.set_strength_characteristic(self.pure_strength)
@@ -201,6 +216,12 @@ class Entity(GameObject):
         self.set_pure_attributes()
         last_x, last_y = self.center
 
+        intersecs = pygame.sprite.spritecollide(self, self.game.get_objects(), False)
+
+        for obj in intersecs:
+            if type(obj) is Door:
+                obj.change_location(self)
+
         walls = list(filter(lambda x: not x.transition, pygame.sprite.spritecollide(self, self.game.get_environment_objects(), False)))
         
         center = self.center
@@ -237,6 +258,9 @@ class Entity(GameObject):
 
         self.recalculate_attributes()
 
+        self.change_health(0.005)
+        self.change_mana(0.005)
+
     def affect_effect(self, effect):
         self.effects.append(effect.copy())
         self.game.get_main_gui().update_effects_window()
@@ -254,6 +278,8 @@ class Entity(GameObject):
         enemies = self.game.get_objects()
         move_status = self.get_move_state()
         for e in enemies:
+            if Entity not in e.__class__.__mro__:
+                continue
             dx = e.centerx - self.centerx
             dy = e.centery - self.centery
             dist = (dx ** 2 + dy ** 2) ** 0.5
@@ -288,6 +314,12 @@ class Entity(GameObject):
 
     def get_inventory(self):
         return self.inventory
+
+    def add_magic(self, magic):
+        self.magic.append(magic)
+
+    def use_magic(self):
+        self.magic[self.current_magic_index].use(self)
 
     def attack_enemy(self, enemy, basic_damage):
         enemy.change_health(basic_damage * (1 + self.strength_characteristic * 3 / 100))
@@ -365,7 +397,7 @@ class Zombie(Entity):
     def __init__(self, x, y, game):
         super().__init__(x, y, 51, 105, [0, 0], game)
 
-        self.pure_strength = 5
+        self.pure_strength = 50
         self.pure_speed = 5
         self.pure_intelligence = 0
 
@@ -457,3 +489,75 @@ class Zombie(Entity):
 
         self.calculate_current_pixmap()
 
+
+class Door(GameObject):
+    def __init__(self, x, y, game, loc, new_pos):
+        super().__init__(x, y, 50, 50, game)
+        self.loc = loc
+        self.new_x = new_pos[0]
+        self.new_y = new_pos[1]
+
+    def change_location(self, obj):
+        self.game.delete_object(obj)
+        self.game.load_location(self.loc)
+        self.game.spawn_object(obj)
+        obj.set_x(self.new_x)
+        obj.set_y(self.new_y)
+
+    def draw(self):
+        screen = pygame.Surface((50, 50), pygame.SRCALPHA)
+        pygame.draw.rect(screen, (50, 0, 0), (0, 0, 50, 50))
+        return screen
+
+
+class Fireball(GameObject):
+    def __init__(self, x, y, game, speed):
+        super().__init__(x, y, 90, 90, game, speed)
+
+        if speed[1] == 0:
+            self.angle = 90
+        else:
+            self.angle = math.degrees(math.atan2(speed[0], speed[1]))
+        print(speed[0], speed[1], self.angle)
+        self.basic_pixmaps = [load_image("textures/balls/fireball_1.png"),
+                              load_image("textures/balls/fireball_2.png")]
+
+        self.rotated_pixmaps = list(map(lambda x: pygame.transform.rotate(x, self.angle), self.basic_pixmaps))
+
+        self.ticks = 0
+
+    def update(self):
+        self.ticks += 1
+        super().update()
+
+        objects = pygame.sprite.spritecollide(self, self.game.get_objects(), False)
+        if any(map(lambda x: Entity in x.__class__.__mro__ and
+                   Player not in x.__class__.__mro__, objects)):
+            self.burst()
+
+    def draw(self):
+        pix_tic = self.ticks // 5 % len(self.basic_pixmaps)
+        
+        return self.rotated_pixmaps[pix_tic]
+
+    def burst(self):
+        self.game.delete_object(self)
+
+
+class FireballMagic(Magic):
+    def __init__(self):
+        super().__init__(self.run, 30)
+
+    def run(self, obj):
+        x, y = obj.centerx, obj.centery
+        pos = pygame.mouse.get_pos()
+        tx = pos[0] + obj.game.get_main_drawer().drawdelta_x
+        ty = pos[1] + obj.game.get_main_drawer().drawdelta_y
+        dx = tx - x
+        dy = ty - y
+        a = abs(dx / dy)
+
+        sy = copysign((25 / (a ** 2 + 1)) ** 0.5, dy)
+        sx = copysign(a * sy, dx)
+
+        obj.game.spawn_object(Fireball(x - 32, y - 32, obj.game, [sx, sy]))
