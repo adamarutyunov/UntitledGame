@@ -126,8 +126,13 @@ class Particle(GameObject):
             return self.pixmaps[self.pixmap_ticks]
         return None
 
+    def calculate_ticks(self):
+        self.period = self.time // len(self.pixmaps)
+
     def update(self):
-        self.pixmap_ticks = self.ticks % len(self.pixmaps)
+        self.pixmap_ticks = self.ticks // self.period
+        if self.pixmap_ticks >= len(self.pixmaps):
+            self.pixmap_ticks = len(self.pixmaps) - 1
         self.ticks += 1
 
 
@@ -189,7 +194,23 @@ class DamageParticle(Particle):
     def spawn(self, x, y, w, h, time):
         p = Particle(x, y, w, h, time)
         p.pixmaps = self.pixmaps
+        p.calculate_ticks()
+        return p
+
+
+class ExplosionParticle(Particle):
+    def __init__(self):
+        self.load_pixmaps([load_image("textures/damage/boom_1.png"),
+                             load_image("textures/damage/boom_2.png"),
+                             load_image("textures/damage/boom_3.png"),
+                             load_image("textures/damage/boom_4.png")])
+
+    def spawn(self, x, y, w, h, time):
+        p = Particle(x, y, w, h, time)
+        p.pixmaps = self.pixmaps
+        p.calculate_ticks()
         return p
 
 
 DamageParticleInstance = DamageParticle()
+ExplosionParticleInstance = ExplosionParticle()

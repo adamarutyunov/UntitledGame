@@ -3,6 +3,7 @@ from math import copysign
 from BaseModule import *
 from Constants import *
 from MagicModule import *
+from LocationModule import *
 
 
 class Entity(GameObject):
@@ -207,6 +208,7 @@ class Entity(GameObject):
         if item not in self.inventory:
             return
         self.inventory.remove(item)
+        self.inventory.append(None)
         self.game.get_main_gui().update_inventory()
         self.game.get_main_gui().update_item_cell()
 
@@ -254,7 +256,7 @@ class Entity(GameObject):
         self.slow_down(1)
 
         if self.get_health() <= 0:
-            self.game.get_objects().remove(self)
+            self.die()
 
         self.recalculate_attributes()
 
@@ -323,6 +325,9 @@ class Entity(GameObject):
 
     def attack_enemy(self, enemy, basic_damage):
         enemy.change_health(basic_damage * (1 + self.strength_characteristic * 3 / 100))
+
+    def die(self):
+        self.game.get_objects().remove(self)
         
 
 class Player(Entity):
@@ -343,11 +348,11 @@ class Player(Entity):
         self.recalculate_attributes()
         self.fill_attributes()
 
-        self.texture_path = "textures/player/"
         self.load_pixmaps()
         self.calculate_current_pixmap()
 
     def load_pixmaps(self):
+        self.texture_path = "textures/player/"
         def gtn(name):
             return self.texture_path + name + ".png"
         
@@ -416,7 +421,6 @@ class Zombie(Entity):
         self.current_cooldown = 0
 
         self.targets = [Player]
-        self.texture_path = "textures/zombie/"
         self.load_pixmaps()
         self.calculate_current_pixmap()
 
@@ -429,6 +433,7 @@ class Zombie(Entity):
         return screen
     
     def load_pixmaps(self):
+        self.texture_path = "textures/zombie/"
         def gtn(name):
             return self.texture_path + name + ".png"
         
@@ -490,6 +495,113 @@ class Zombie(Entity):
         self.calculate_current_pixmap()
 
 
+class BurningMan(Entity):
+    def __init__(self, x, y, game):
+        super().__init__(x, y, 42, 117, [0, 0], game)
+
+        self.pure_strength = 50
+        self.pure_speed = 10
+        self.pure_intelligence = 0
+
+        self.strength_characteristic = self.pure_strength
+        self.speed_characteristic = self.pure_speed
+        self.intelligence_characteristic = self.pure_intelligence
+
+        self.recalculate_attributes()
+        self.fill_attributes()
+
+        self.vision_radius = 1000
+        self.attack_radius = 600
+
+        self.power = 10
+        self.attack_cooldown = 180
+        self.current_cooldown = 0
+
+        self.targets = [Player]
+        self.load_pixmaps()
+
+
+    def draw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        screen.blit(self.pixmaps[self.pixmap_ticks // 10 % 3],
+                    (0, 0))
+        return screen
+    
+    def load_pixmaps(self):
+        self.texture_path = "textures/burning_man/"
+        def gtn(name):
+            return self.texture_path + name + ".png"
+        
+        self.pixmaps = [load_image(gtn("burning_man_1"), -1),
+                        load_image(gtn("burning_man_2"), -1),
+                        load_image(gtn("burning_man_3"), -1)]
+        
+    def update(self):
+        enemies = list(filter(lambda x: type(x) in self.targets, self.game.get_objects()))
+
+        if not enemies:
+            return
+
+        nearest_player = min(enemies, key=lambda x: (self.centerx - x.centerx) ** 2 + (self.centery - x.centery) ** 2)
+        distance_to_nearest_player = ((self.centerx - nearest_player.centerx) ** 2 +
+                                      (self.centery - nearest_player.centery) ** 2) ** 0.5
+        
+        if distance_to_nearest_player <= self.attack_radius:
+            if self.current_cooldown <= 0:
+                x, y = self.centerx, self.centery
+                pos = nearest_player.centerx, nearest_player.centery
+                
+                tx = pos[0]
+                ty = pos[1]
+                dx = tx - x
+                dy = ty - y
+                a = abs(dx / dy)
+
+                sy = copysign((50 / (a ** 2 + 1)) ** 0.5, dy)
+                sx = copysign(a * sy, dx)
+
+                self.game.spawn_object(Fireball(x - 32, y - 32, self.game, [sx, sy], self))
+                
+                self.current_cooldown = self.attack_cooldown
+                
+        elif distance_to_nearest_player <= self.vision_radius:
+            dx = self.centerx - nearest_player.centerx
+            dy = self.centery - nearest_player.centery
+
+            if abs(dx) > abs(dy):
+                dx, dy = copysign(1, -dx), copysign(abs(dy / dx), -dy)
+            elif abs(dx) < abs(dy):
+                dy, dx = copysign(1, -dy), copysign(abs(dx / dy), -dx)
+            else:
+                dy, dx = copysign(1, -dy), copysign(1, -dx)
+
+            self.update_vector(dx, dy)
+
+        if self.current_cooldown > 0:
+            self.current_cooldown -= 1
+
+        super().update()
+
+        self.pixmap_ticks += 1
+
+
+class DarkBurningMan(BurningMan):
+    def __init__(self, x, y, game):
+        super().__init__(x, y, game)
+
+        self.attack_cooldown = 60
+        self.attack_radius = 400
+
+    def load_pixmaps(self):
+        self.texture_path = "textures/burning_man_dark/"
+        def gtn(name):
+            return self.texture_path + name + ".png"
+        
+        self.pixmaps = [load_image(gtn("burning_man_dark_1"), -1),
+                        load_image(gtn("burning_man_dark_2"), -1),
+                        load_image(gtn("burning_man_dark_3"), -1)]
+
+
 class Door(GameObject):
     def __init__(self, x, y, game, loc, new_pos):
         super().__init__(x, y, 50, 50, game)
@@ -499,8 +611,10 @@ class Door(GameObject):
 
     def change_location(self, obj):
         self.game.delete_object(obj)
-        self.game.load_location(self.loc)
-        self.game.spawn_object(obj)
+        if type(obj) is Player:
+            self.game.get_screen().fill((0, 0, 0))
+            self.game.load_location(self.loc)
+        self.loc.spawn_object(obj)
         obj.set_x(self.new_x)
         obj.set_y(self.new_y)
 
@@ -511,14 +625,14 @@ class Door(GameObject):
 
 
 class Fireball(GameObject):
-    def __init__(self, x, y, game, speed):
+    def __init__(self, x, y, game, speed, sender):
         super().__init__(x, y, 90, 90, game, speed)
+        self.sender = sender
 
         if speed[1] == 0:
             self.angle = 90
         else:
             self.angle = math.degrees(math.atan2(speed[0], speed[1]))
-        print(speed[0], speed[1], self.angle)
         self.basic_pixmaps = [load_image("textures/balls/fireball_1.png"),
                               load_image("textures/balls/fireball_2.png")]
 
@@ -531,8 +645,9 @@ class Fireball(GameObject):
         super().update()
 
         objects = pygame.sprite.spritecollide(self, self.game.get_objects(), False)
-        if any(map(lambda x: Entity in x.__class__.__mro__ and
-                   Player not in x.__class__.__mro__, objects)):
+        if any(map(lambda x: (Entity in x.__class__.__mro__ or
+                   Field in x.__class__.__mro__ and x.get_transition is False) and
+                   x is not self.sender, objects)):
             self.burst()
 
     def draw(self):
@@ -541,12 +656,20 @@ class Fireball(GameObject):
         return self.rotated_pixmaps[pix_tic]
 
     def burst(self):
+        self.game.spawn_object(ExplosionParticleInstance.spawn(self.left + self.speed[0] * 5,
+                                                               self.top + self.speed[1] * 5,
+                                                               self.width, self.height,
+                                                               30))
+        objects = list(filter(lambda x: Entity in x.__class__.__mro__,
+                              pygame.sprite.spritecollide(self, self.game.get_objects(), False)))
+        for o in objects:
+            o.change_health(-20)
         self.game.delete_object(self)
 
 
 class FireballMagic(Magic):
     def __init__(self):
-        super().__init__(self.run, 30)
+        super().__init__(self.run, 5)
 
     def run(self, obj):
         x, y = obj.centerx, obj.centery
@@ -557,7 +680,7 @@ class FireballMagic(Magic):
         dy = ty - y
         a = abs(dx / dy)
 
-        sy = copysign((25 / (a ** 2 + 1)) ** 0.5, dy)
+        sy = copysign((50 / (a ** 2 + 1)) ** 0.5, dy)
         sx = copysign(a * sy, dx)
 
-        obj.game.spawn_object(Fireball(x - 32, y - 32, obj.game, [sx, sy]))
+        obj.game.spawn_object(Fireball(x - 32, y - 32, obj.game, [sx, sy], obj))

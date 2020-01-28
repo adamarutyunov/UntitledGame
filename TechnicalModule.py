@@ -1,6 +1,7 @@
 import pygame
 from LocationModule import *
 from Constants import *
+from EntityModule import *
 
 
 class Drawer:
@@ -37,6 +38,10 @@ class Drawer:
             if draw_surface:
                 self.screen.blit(draw_surface, (obj.left - self.drawdelta_x,
                                                 obj.top - self.drawdelta_y))
+                hp_indicator = self.game.get_main_gui().get_health_indicator(obj)
+                if hp_indicator:
+                    self.screen.blit(hp_indicator, (obj.left - self.drawdelta_x,
+                                                    obj.top - self.drawdelta_y - 10 - hp_indicator.get_rect().height))
 
         self.game.get_main_gui().draw()
 
@@ -473,7 +478,23 @@ class GUI:
                                                                      y - ATTRIBUTE_BAR_POS[1]) or
                                  self.item_cell.get_context_menu(x - ITEM_CELL_POS[0],
                                                                  y - ITEM_CELL_POS[1]))
-            
+
+    def get_health_indicator(self, obj):
+        if Entity not in obj.__class__.__mro__:
+            return None
+
+        health, max_health = obj.get_health(), obj.get_max_health()
+        w = obj.width
+        h = w // 10
+
+        hp = pygame.Surface((w, h))
+        hp.fill((200, 0, 0))
+
+        if health <= 0 or max_health <= 0:
+            return hp
+
+        pygame.draw.rect(hp, (50, 255, 50), (0, 0, w * health // max_health, h))
+        return hp
         
     
     def draw(self):

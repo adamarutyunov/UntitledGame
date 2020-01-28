@@ -9,7 +9,6 @@ class Magic:
     def use(self, obj):
         if obj.get_mana() >= self.need_magic:
             obj.change_mana(-self.need_magic)
-            print(123)
             self.func(obj)
 
 

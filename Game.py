@@ -117,8 +117,8 @@ FirstLocation.load(f"{locations_path}/FirstLocation.loc")
 SecondLocation = Location(UGame)
 SecondLocation.load(f"{locations_path}/SecondLocation.loc")
 
-FirstLocation.spawn_object(Door(300, 0, UGame, SecondLocation, (0, 0)))
-SecondLocation.spawn_object(Door(0, 200, UGame, FirstLocation, (0, 0)))
+FirstLocation.spawn_object(Door(300, 0, UGame, SecondLocation, (200, 200)))
+SecondLocation.spawn_object(Door(100, 200, UGame, FirstLocation, (0, 0)))
 UGame.load_location(FirstLocation)
 
 
@@ -126,11 +126,7 @@ player = Player(100, 100, UGame)
 
 UGame.set_main_player(player)
 UGame.spawn_object(UGame.get_main_player())
-UGame.spawn_object(Zombie(500, 100, UGame))
-UGame.spawn_object(Zombie(300, 300, UGame))
-UGame.spawn_object(Zombie(100, 500, UGame))
-fb = Fireball(100, 100, UGame, [5, 1])
-UGame.spawn_object(fb)
+UGame.spawn_object(BurningMan(500, 500, UGame))
 
 
 
@@ -169,7 +165,6 @@ while True:
         new_time = time.time()
         try:
             dif = int(1 / (new_time - cur_time))
-            fpss.append(dif)
         except Exception as e:
             pass
         fps_pixmap = MagicFont.render(str(dif), False, (0, 255, 0))

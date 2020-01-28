@@ -31,6 +31,11 @@ class NoneField(Field):
         super().__init__(False, NoneTexture)
 
 
+class StoneField(Field):
+    def __init__(self):
+        super().__init__(False, StoneTexture)
+
+
 class Location:
     def __init__(self, game):
         self.data = []
@@ -109,11 +114,14 @@ class Location:
 
 
 field_textures_path = "textures/fields"
+
 GrassTexture = load_image(f"{field_textures_path}/GrassField.png")
+StoneTexture = load_image(f"{field_textures_path}/StoneField.png")
 NoneTexture = load_image(f"{field_textures_path}/NoneField.png")
 
 LocationCodes = {
     "G": GrassField,
-    " ": NoneField}
+    " ": NoneField,
+    "S": StoneField}
 
 locations_path = "locations"
