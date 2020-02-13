@@ -2,6 +2,8 @@ import pygame
 from LocationModule import *
 from Constants import *
 from EntityModule import *
+from itertools import cycle
+from random import shuffle, randint
 
 
 class Drawer:
@@ -95,6 +97,11 @@ class EventHandler:
             self.game.toggle_gui()
         if keys[pygame.K_r] and not self.last_keys[pygame.K_r]:
             self.game.get_main_player().use_magic()
+
+        if keys[pygame.K_q] and not self.last_keys[pygame.K_q]:
+            self.game.get_main_player().prev_magic()
+        if keys[pygame.K_e] and not self.last_keys[pygame.K_e]:
+            self.game.get_main_player().next_magic()
             
 
 
@@ -288,6 +295,26 @@ class ItemCell(GUIModule):
         self.screen = screen
 
 
+class MagicCell(GUIModule):
+    def __init__(self, game):        
+        self.cell_pixmap = load_image("textures/gui/cell.png")
+        super().__init__(self.cell_pixmap, game)
+
+    def redraw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+        pygame.draw.rect(screen, (0, 0, 0, 127), (0, 0, self.width, self.height))
+        screen.blit(self.cell_pixmap, (0, 0))
+
+        magic = self.game.get_main_player().get_current_magic()
+
+        if magic is not None:
+            icon = pygame.transform.scale(magic.get_icon(), (50, 50))
+            screen.blit(icon, (12, 12))
+
+        self.screen = screen
+
+
 class AttributeBar(GUIModule):
     def __init__(self, game):
         self.attribute_bar_pixmap = load_image("textures/gui/attribute_bar.png")
@@ -411,6 +438,20 @@ class EffectsWindow(GUIModule):
         return context_menu
 
 
+class InfoText(GUIModule):
+    def __init__(self, game, text, time):
+        self.pixmap = MagicFont.render(text, True, LABEL_COLOR)
+        super().__init__(self.pixmap, game)
+
+        self.time = time
+
+    def draw(self):
+        self.time -= 1
+        if self.time <= 0:
+            self.game.get_main_gui().delete_info()
+            
+        return self.pixmap
+        
 
 class GUI:
     def __init__(self, game):
@@ -421,11 +462,13 @@ class GUI:
         self.item_cell = ItemCell(game)
         self.effects_window = EffectsWindow(game)
         self.characteristics_window = CharacteristicsWindow(game)
+        self.magic_cell = MagicCell(game)
 
         self.hurt = pygame.Surface((1920, 1080))
         pygame.draw.rect(self.hurt, (255, 0, 0), (0, 0, 1920, 1080))
 
         self.context_menu = None
+        self.info = None
 
     def get_inventory(self):
         return self.inventory
@@ -454,12 +497,19 @@ class GUI:
     def update_characteristics_window(self):
         self.characteristics_window.redraw()
 
+    def update_magic_cell(self):
+        self.magic_cell.redraw()
+
     def redraw_all(self):
         self.update_inventory()
         self.update_attribute_bar()
         self.update_item_cell()
         self.update_effects_window()
         self.update_characteristics_window()
+        self.update_magic_cell()
+
+    def die(self):
+        d = DeathMenu()  
 
     def update(self):
         x, y = pygame.mouse.get_pos()
@@ -510,6 +560,11 @@ class GUI:
             
         indicators = self.attribute_bar.draw()
         self.game.screen.blit(indicators, ATTRIBUTE_BAR_POS)
+
+        if self.info:
+            info = self.info.draw()
+            if self.info and info:
+                self.game.screen.blit(info, (1890 - self.info.width, 1060 - self.info.height))
         
         if self.game.get_gui_state():
             inventory = self.inventory.draw()
@@ -524,7 +579,182 @@ class GUI:
             cell = self.item_cell.draw()
             self.game.screen.blit(cell, ITEM_CELL_POS)
 
+            magic_cell = self.magic_cell.draw()
+            self.game.screen.blit(magic_cell, MAGIC_CELL_POS)
+
         if self.context_menu is not None:
             self.game.screen.blit(self.context_menu, (self.mouse_x - self.context_menu.get_rect().width // 2,
                                                       self.mouse_y - self.context_menu.get_rect().height - 10))
-                 
+
+    def add_info(self, text, time):
+        self.info = InfoText(self.game, text, time)
+
+    def delete_info(self):
+        self.info = None
+
+
+class MusicModule:
+    def __init__(self, game):
+        self.game = game
+
+        self.music_path = "music/"
+        self.music_names = ["adventure_begins",
+                            "hello_world",
+                            "lonely_sola",
+                            "lovely_caves",
+                            "the_battle_is_going_on",
+                            "greed"]
+        random.shuffle(self.music_names)
+        self.sound_paths = map(lambda x: self.music_path + x + ".mp3", self.music_names)
+        self.sounds = cycle(self.sound_paths)
+
+        self.silence_time = 3600
+        self.current_time = 0
+
+    def change_music(self, music_name):
+        self.current_time = 0
+        pygame.mixer.music.load(music_name)
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play()
+
+    def update(self):
+        if pygame.mixer.music.get_busy():
+            return
+
+        self.current_time += 1
+        if self.current_time >= self.silence_time:
+            self.change_music(next(self.sounds))
+
+
+class MainMenu:
+    def __init__(self):
+        self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN | pygame.SRCALPHA)
+        self.pixmap = load_image("textures/gui/main_menu.png")
+        
+        self.playbutton = load_image("textures/gui/playbutton.png")
+        self.playbutton_hover = load_image("textures/gui/playbutton_hover.png")
+
+        self.exitbutton = load_image("textures/gui/exitbutton.png")
+        self.exitbutton_hover = load_image("textures/gui/exitbutton_hover.png")
+
+        self.mouse_pos = pygame.mouse.get_pos()
+
+        self.playbutton_pos = (575, 600)
+        self.exitbutton_pos = (575, 800)
+
+        pygame.mixer.music.load("music/main_theme.mp3")
+        pygame.mixer.music.set_volume(0.5)
+
+        self.run()
+
+    def run(self):
+        pygame.mixer.music.play()
+        clock = pygame.time.Clock()
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        res = self.click()
+                        if res is False:
+                            pygame.quit()
+                            return
+                        elif res is True:
+                            self.screen.fill((0, 0, 0))
+                            pygame.mixer.music.stop()
+                            return
+                elif event.type == pygame.MOUSEMOTION:
+                    self.mouse_pos = event.pos
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+            self.draw()
+            clock.tick(FPS)
+
+    def draw(self):
+        self.screen.fill((0, 0, 0))
+        self.screen.blit(self.pixmap, (0, 0))
+
+        if (self.playbutton_pos[0] <= self.mouse_pos[0] <= self.playbutton_pos[0] + self.playbutton.get_rect().width and
+                self.playbutton_pos[1] <= self.mouse_pos[1] <= self.playbutton_pos[1] + self.playbutton.get_rect().height):
+            self.screen.blit(self.playbutton_hover, self.playbutton_pos)
+        else:
+            self.screen.blit(self.playbutton, self.playbutton_pos)
+
+        if (self.exitbutton_pos[0] <= self.mouse_pos[0] <= self.exitbutton_pos[0] + self.exitbutton.get_rect().width and
+                self.exitbutton_pos[1] <= self.mouse_pos[1] <= self.exitbutton_pos[1] + self.exitbutton.get_rect().height):
+            self.screen.blit(self.exitbutton_hover, self.exitbutton_pos)
+        else:
+            self.screen.blit(self.exitbutton, self.exitbutton_pos)
+
+        pygame.display.flip()
+
+    def click(self):
+        if (self.playbutton_pos[0] <= self.mouse_pos[0] <= self.playbutton_pos[0] + self.playbutton.get_rect().width and
+                self.playbutton_pos[1] <= self.mouse_pos[1] <= self.playbutton_pos[1] + self.playbutton.get_rect().height):
+            return True
+
+        if (self.exitbutton_pos[0] <= self.mouse_pos[0] <= self.exitbutton_pos[0] + self.exitbutton.get_rect().width and
+                self.exitbutton_pos[1] <= self.mouse_pos[1] <= self.exitbutton_pos[1] + self.exitbutton.get_rect().height):
+            return False        
+        
+
+class DeathMenu:
+    def __init__(self):
+        self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN | pygame.SRCALPHA)
+        self.pixmap = load_image("textures/gui/death_menu.png")
+
+        self.exitbutton = load_image("textures/gui/exitbutton_red.png")
+        self.exitbutton_hover = load_image("textures/gui/exitbutton_red_hover.png")
+
+        self.d = load_image("textures/gui/death_d.png")
+        self.e = load_image("textures/gui/death_e.png")
+        self.a = load_image("textures/gui/death_a.png")
+        self.t = load_image("textures/gui/death_t.png")
+        self.h = load_image("textures/gui/death_h.png")
+
+        self.mouse_pos = pygame.mouse.get_pos()
+
+        self.exitbutton_pos = (575, 750)
+
+        pygame.mixer.music.stop()
+
+        self.run()
+
+    def run(self):
+        clock = pygame.time.Clock()
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        res = self.click()
+                        if res is False:
+                            pygame.quit()
+                            return
+                elif event.type == pygame.MOUSEMOTION:
+                    self.mouse_pos = event.pos
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+            self.draw()
+            clock.tick(FPS)
+
+    def draw(self):
+        self.screen.fill((255, 0, 0))
+        self.screen.blit(self.d, (164 + randint(-15, 15), 150 + randint(-15, 15)))
+        self.screen.blit(self.e, (528 + randint(-15, 15), 150 + randint(-15, 15)))
+        self.screen.blit(self.a, (842 + randint(-15, 15), 150 + randint(-15, 15)))
+        self.screen.blit(self.t, (1166 + randint(-15, 15), 150 + randint(-15, 15)))
+        self.screen.blit(self.h, (1480 + randint(-15, 15), 150 + randint(-15, 15)))
+
+        if (self.exitbutton_pos[0] <= self.mouse_pos[0] <= self.exitbutton_pos[0] + self.exitbutton.get_rect().width and
+                self.exitbutton_pos[1] <= self.mouse_pos[1] <= self.exitbutton_pos[1] + self.exitbutton.get_rect().height):
+            self.screen.blit(self.exitbutton_hover, self.exitbutton_pos)
+        else:
+            self.screen.blit(self.exitbutton, self.exitbutton_pos)
+
+        pygame.display.flip()
+
+    def click(self):
+        if (self.exitbutton_pos[0] <= self.mouse_pos[0] <= self.exitbutton_pos[0] + self.exitbutton.get_rect().width and
+                self.exitbutton_pos[1] <= self.mouse_pos[1] <= self.exitbutton_pos[1] + self.exitbutton.get_rect().height):
+            return False

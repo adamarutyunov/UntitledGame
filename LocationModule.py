@@ -36,11 +36,32 @@ class StoneField(Field):
         super().__init__(False, StoneTexture)
 
 
+class WoodField(Field):
+    def __init__(self):
+        super().__init__(True, WoodTexture)
+
+
+class TransparentField(Field):
+    def __init__(self):
+        super().__init__(True, NoneTexture)
+
+
+class HellgrassField(Field):
+    def __init__(self):
+        super().__init__(True, HellgrassTexture)
+
+
+class HellstoneField(Field):
+    def __init__(self):
+        super().__init__(False, HellstoneTexture)
+
+
 class Location:
     def __init__(self, game):
         self.data = []
         self.func = None
         self.game = game
+        self.name = ""
 
         self.width = -1
         self.height = -1
@@ -112,16 +133,29 @@ class Location:
         if obj in self.objects:
             self.objects.remove(obj)
 
+    def set_name(self, name):
+        self.name = name
+
+    def get_name(self):
+        return self.name
+
 
 field_textures_path = "textures/fields"
 
 GrassTexture = load_image(f"{field_textures_path}/GrassField.png")
 StoneTexture = load_image(f"{field_textures_path}/StoneField.png")
+HellgrassTexture = load_image(f"{field_textures_path}/HellgrassField.png")
+HellstoneTexture = load_image(f"{field_textures_path}/HellstoneField.png")
+WoodTexture = load_image(f"{field_textures_path}/WoodField.png")
 NoneTexture = load_image(f"{field_textures_path}/NoneField.png")
 
 LocationCodes = {
     "G": GrassField,
     " ": NoneField,
-    "S": StoneField}
+    "S": StoneField,
+    "W": WoodField,
+    "N": TransparentField,
+    "g": HellgrassField,
+    "s": HellstoneField}
 
 locations_path = "locations"

@@ -109,7 +109,7 @@ class Weapon(Item):
 class Particle(GameObject):
     def __init__(self, x, y, w, h, time):
         super().__init__(x, y, w, h)
-        self.pixmap_ticks = -1
+        self.pixmap_ticks = 0
         self.time = time
         self.ticks = 0
 
@@ -143,7 +143,19 @@ class HealthUpPotion(Item):
         self.load_icon(load_image("textures/items/potions/health_up_potion.png"))
 
     def use(self, obj):
-        effect = IncreaseHealthEffect(60, 0.5)
+        effect = IncreaseHealthEffect(60, 0.2)
+        obj.affect_effect(effect)
+        obj.remove_item(self)
+
+
+class MagicUpPotion(Item):
+    def __init__(self):
+        super().__init__(self.use, "Зелье магии")
+
+        self.load_icon(load_image("textures/items/potions/magic_up_potion.png"))
+
+    def use(self, obj):
+        effect = IncreaseManaEffect(60, 0.2)
         obj.affect_effect(effect)
         obj.remove_item(self)
 
@@ -212,5 +224,60 @@ class ExplosionParticle(Particle):
         return p
 
 
+class FrozenExplosionParticle(Particle):
+    def __init__(self):
+        self.load_pixmaps([load_image("textures/damage/frozenboom_1.png"),
+                             load_image("textures/damage/frozenboom_2.png"),
+                             load_image("textures/damage/frozenboom_3.png"),
+                             load_image("textures/damage/frozenboom_4.png")])
+
+    def spawn(self, x, y, w, h, time):
+        p = Particle(x, y, w, h, time)
+        p.pixmaps = self.pixmaps
+        p.calculate_ticks()
+        return p
+
+
+class Drop(GameObject):
+    def __init__(self, x, y, game, item):
+        self.icon = item.get_icon()
+        self.item = item
+        super().__init__(x, y, self.icon.get_rect().width,
+                         self.icon.get_rect().height,
+                         game)
+
+        self.ticks = 0
+
+    def draw(self):
+        return self.icon
+
+    def get(self, obj):
+        obj.get_item(self.item)
+        self.game.delete_object(self)
+        if obj is self.game.get_main_player():
+            self.game.get_main_gui().add_info(self.item.get_name(), 120)
+
+
+class MagicDrop(GameObject):
+    def __init__(self, x, y, game, magic):
+        self.icon = magic.get_icon()
+        self.magic = magic
+        super().__init__(x, y, self.icon.get_rect().width,
+                         self.icon.get_rect().height,
+                         game)
+
+        self.ticks = 0
+
+    def draw(self):
+        return self.icon
+
+    def get(self, obj):
+        obj.add_magic(self.magic)
+        self.game.delete_object(self)
+        if obj is self.game.get_main_player():
+            self.game.get_main_gui().add_info("Вы выучили заклинание: " + self.magic.get_name(), 120)
+
+
 DamageParticleInstance = DamageParticle()
 ExplosionParticleInstance = ExplosionParticle()
+FrozenExplosionParticleInstance = FrozenExplosionParticle()

@@ -1,4 +1,5 @@
 import pygame
+import random
 from math import copysign
 from BaseModule import *
 from Constants import *
@@ -64,15 +65,21 @@ class Entity(GameObject):
 
     def set_health(self, health):
         self.health = health
-        self.game.get_main_gui().update_attribute_bar()
+        
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_attribute_bar()
 
     def set_mana(self, mana):
         self.mana = mana
-        self.game.get_main_gui().update_attribute_bar()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_attribute_bar()
 
     def change_health(self, health):
         self.health += health
-        self.game.get_main_gui().update_attribute_bar()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_attribute_bar()
 
         if health < 0:
             self.game.spawn_object(DamageParticleInstance.spawn(self.left, self.top,
@@ -81,7 +88,9 @@ class Entity(GameObject):
 
     def change_mana(self, mana):
         self.mana += mana
-        self.game.get_main_gui().update_attribute_bar()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_attribute_bar()
 
     def get_strength_characteristic(self):
         return self.strength_characteristic
@@ -103,15 +112,21 @@ class Entity(GameObject):
 
     def change_strength_characteristic(self, strength):
         self.strength_characteristic += strength
-        self.game.get_main_gui().update_characteristics_window()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_characteristics_window()
 
     def change_speed_characteristic(self, speed):
         self.speed_characteristic += speed
-        self.game.get_main_gui().update_characteristics_window()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_characteristics_window()
 
     def change_intelligence_characteristic(self, intelligence):
         self.intelligence_characteristic += intelligence
-        self.game.get_main_gui().update_characteristics_window()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_characteristics_window()
 
     def get_basic_strength(self):
         return self.pure_strength
@@ -127,12 +142,16 @@ class Entity(GameObject):
         self.mana = self.get_max_mana()
 
     def recalculate_attributes(self):
+        self.speed_characteristic = max(self.speed_characteristic, 0)
+        self.intelligence_characteristic = max(self.intelligence_characteristic, 0)
+        self.strength_characteristic = max(self.strength_characteristic, 0)
+        
         self.set_max_mana(self.intelligence_characteristic * 3)
         self.set_max_speed(self.speed_characteristic / 3)
         self.set_max_health(self.strength_characteristic * 3)
 
         self.health = min(self.health, self.max_health)
-        self.mana = min(self.mana, self.max_mana) 
+        self.mana = min(self.mana, self.max_mana)
 
     def set_pure_attributes(self):
         self.set_strength_characteristic(self.pure_strength)
@@ -201,16 +220,20 @@ class Entity(GameObject):
         if not None in self.inventory:
             return
         self.inventory[self.inventory.index(None)] = item
-        self.game.get_main_gui().update_inventory()
-        self.game.get_main_gui().update_item_cell()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_inventory()
+            self.game.get_main_gui().update_item_cell()
 
     def remove_item(self, item):
         if item not in self.inventory:
             return
         self.inventory.remove(item)
         self.inventory.append(None)
-        self.game.get_main_gui().update_inventory()
-        self.game.get_main_gui().update_item_cell()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_inventory()
+            self.game.get_main_gui().update_item_cell()
 
     def update(self):
         super().update()
@@ -221,28 +244,20 @@ class Entity(GameObject):
         intersecs = pygame.sprite.spritecollide(self, self.game.get_objects(), False)
 
         for obj in intersecs:
-            if type(obj) is Door:
+            if Door in obj.__class__.__mro__:
                 obj.change_location(self)
+            elif type(obj) is Drop:
+                obj.get(self)
+            elif type(obj) is MagicDrop:
+                obj.get(self)
 
         walls = list(filter(lambda x: not x.transition, pygame.sprite.spritecollide(self, self.game.get_environment_objects(), False)))
         
         center = self.center
 
-        for wall in walls:
-            wx = wall.centerx
-            wy = wall.centery
-            if abs(last_x - wx) >= abs(last_y - wy):
-                if self.speed[0] > 0:
-                    self.set_x(wall.rect.left - self.width)
-                elif self.speed[0] < 0:
-                    self.set_x(wall.rect.right)
-                self.speed[0] = 0
-            if abs(last_x - wx) <= abs(last_y - wy):
-                if self.speed[1] > 0:
-                    self.set_y(wall.rect.top - self.height)
-                elif self.speed[1] < 0:
-                    self.set_y(wall.rect.bottom)
-                self.speed[1] = 0
+        if walls:
+            self.move(-self.speed[0], -self.speed[1])
+
 
         for effect in self.effects:
             effect.run(self)
@@ -252,25 +267,29 @@ class Entity(GameObject):
         if self.mana < 0:
             self.mana = 0
 
+        self.recalculate_attributes()
+
         self.slow_down(0)
         self.slow_down(1)
 
         if self.get_health() <= 0:
             self.die()
 
-        self.recalculate_attributes()
-
         self.change_health(0.005)
         self.change_mana(0.005)
 
     def affect_effect(self, effect):
         self.effects.append(effect.copy())
-        self.game.get_main_gui().update_effects_window()
+
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_effects_window()
 
     def remove_effect(self, effect):
         if effect in self.effects:
             self.effects.remove(effect)
-            self.game.get_main_gui().update_effects_window()
+
+            if Player in self.__class__.__mro__:
+                self.game.get_main_gui().update_effects_window()
 
     def get_effects(self):
         return self.effects
@@ -314,19 +333,53 @@ class Entity(GameObject):
         self.current_item_index %= len(self.inventory)
         self.game.get_main_gui().update_item_cell()
 
+    def next_magic(self):
+        if not self.magic:
+            return
+        self.current_magic_index += 1
+        self.current_magic_index %= len(self.magic)
+        self.game.get_main_gui().update_magic_cell()
+
+    def prev_magic(self):
+        if not self.magic:
+            return
+        self.current_magic_index -= 1
+        self.current_magic_index %= len(self.magic)
+        self.game.get_main_gui().update_magic_cell()
+
     def get_inventory(self):
         return self.inventory
 
     def add_magic(self, magic):
         self.magic.append(magic)
 
+        if Player in self.__class__.__mro__:
+            self.game.get_main_gui().update_magic_cell()
+
     def use_magic(self):
+        if len(self.magic) <= self.current_magic_index:
+            return
+        
         self.magic[self.current_magic_index].use(self)
 
     def attack_enemy(self, enemy, basic_damage):
         enemy.change_health(basic_damage * (1 + self.strength_characteristic * 3 / 100))
 
+    def get_current_magic(self):
+        if not self.magic:
+            return None
+        return self.magic[self.current_magic_index]
+
     def die(self):
+        x, y = self.centerx, self.centery
+        r = 100
+        for obj in self.inventory:
+            if obj is None:
+                continue
+            self.game.spawn_object(Drop(x + random.uniform(-1, 1) * r,
+                                        y + random.uniform(-1, 1) * r,
+                                        self.game, obj))
+        
         self.game.get_objects().remove(self)
         
 
@@ -397,12 +450,16 @@ class Player(Entity):
         self.x_delta = 0
         self.y_delta = 0
 
+    def die(self):
+        super().die()
+        self.game.get_main_gui().die()
+
 
 class Zombie(Entity):
     def __init__(self, x, y, game):
         super().__init__(x, y, 51, 105, [0, 0], game)
 
-        self.pure_strength = 50
+        self.pure_strength = 25
         self.pure_speed = 5
         self.pure_intelligence = 0
 
@@ -417,14 +474,12 @@ class Zombie(Entity):
         self.attack_radius = 50
 
         self.power = 10
-        self.attack_cooldown = 60
+        self.attack_cooldown = 120
         self.current_cooldown = 0
 
         self.targets = [Player]
         self.load_pixmaps()
         self.calculate_current_pixmap()
-
-        
 
     def draw(self):
         screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
@@ -493,6 +548,156 @@ class Zombie(Entity):
         super().update()
 
         self.calculate_current_pixmap()
+
+
+class DistortedMan(Entity):
+    def __init__(self, x, y, game):
+        super().__init__(x, y, 51, 105, [0, 0], game)
+
+        self.pure_strength = 100
+        self.pure_speed = 2
+        self.pure_intelligence = 50
+
+        self.strength_characteristic = self.pure_strength
+        self.speed_characteristic = self.pure_speed
+        self.intelligence_characteristic = self.pure_intelligence
+
+        self.recalculate_attributes()
+        self.fill_attributes()
+
+        self.vision_radius = 5000
+        self.attack_radius = 50
+
+        self.power = 2
+        self.attack_cooldown = 60
+        self.current_cooldown = 0
+
+        self.targets = [Player]
+        self.load_pixmaps()
+
+    def draw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        screen.blit(self.pixmaps[self.pixmap_ticks // 10 % 3],
+                    (0, 0))
+        return screen
+    
+    def load_pixmaps(self):
+        self.texture_path = "textures/distorted_man/"
+        def gtn(name):
+            return self.texture_path + name + ".png"
+        
+        self.pixmaps = [load_image(gtn("distorted_man_1"), -1),
+                        load_image(gtn("distorted_man_2"), -1),
+                        load_image(gtn("distorted_man_3"), -1)]
+        
+    def update(self):
+        enemies = list(filter(lambda x: type(x) in self.targets, self.game.get_objects()))
+
+        if not enemies:
+            return
+
+        nearest_player = min(enemies, key=lambda x: (self.centerx - x.centerx) ** 2 + (self.centery - x.centery) ** 2)
+        distance_to_nearest_player = ((self.centerx - nearest_player.centerx) ** 2 +
+                                      (self.centery - nearest_player.centery) ** 2) ** 0.5
+        
+        if distance_to_nearest_player <= self.attack_radius:
+            if self.current_cooldown <= 0:
+                nearest_player.change_health(-self.power)
+                nearest_player.affect_effect(DecreaseHealthEffect(600, 0.02))
+                nearest_player.affect_effect(DecreaseManaEffect(600, 0.02))
+                self.current_cooldown = self.attack_cooldown
+        elif distance_to_nearest_player <= self.vision_radius:
+            dx = self.centerx - nearest_player.centerx
+            dy = self.centery - nearest_player.centery
+
+            if abs(dx) > abs(dy):
+                dx, dy = copysign(1, -dx), copysign(abs(dy / dx), -dy)
+            elif abs(dx) < abs(dy):
+                dy, dx = copysign(1, -dy), copysign(abs(dx / dy), -dx)
+            else:
+                dy, dx = copysign(1, -dy), copysign(1, -dx)
+
+            self.update_vector(dx, dy)
+
+        if self.current_cooldown > 0:
+            self.current_cooldown -= 1
+
+        super().update()
+
+
+class GreyDistortedMan(Entity):
+    def __init__(self, x, y, game):
+        super().__init__(x, y, 51, 105, [0, 0], game)
+
+        self.pure_strength = 150
+        self.pure_speed = 4
+        self.pure_intelligence = 50
+
+        self.strength_characteristic = self.pure_strength
+        self.speed_characteristic = self.pure_speed
+        self.intelligence_characteristic = self.pure_intelligence
+
+        self.recalculate_attributes()
+        self.fill_attributes()
+
+        self.vision_radius = 5000
+        self.attack_radius = 50
+
+        self.power = 2
+        self.attack_cooldown = 60
+        self.current_cooldown = 0
+
+        self.targets = [Player]
+        self.load_pixmaps()
+
+    def draw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        screen.blit(self.pixmaps[self.pixmap_ticks // 10 % 3],
+                    (0, 0))
+        return screen
+    
+    def load_pixmaps(self):
+        self.texture_path = "textures/grey_distorted_man/"
+        def gtn(name):
+            return self.texture_path + name + ".png"
+        
+        self.pixmaps = [load_image(gtn("grey_distorted_man_1"), -1),
+                        load_image(gtn("grey_distorted_man_2"), -1),
+                        load_image(gtn("grey_distorted_man_3"), -1)]
+        
+    def update(self):
+        enemies = list(filter(lambda x: type(x) in self.targets, self.game.get_objects()))
+
+        if not enemies:
+            return
+
+        nearest_player = min(enemies, key=lambda x: (self.centerx - x.centerx) ** 2 + (self.centery - x.centery) ** 2)
+        distance_to_nearest_player = ((self.centerx - nearest_player.centerx) ** 2 +
+                                      (self.centery - nearest_player.centery) ** 2) ** 0.5
+        
+        if distance_to_nearest_player <= self.attack_radius:
+            if self.current_cooldown <= 0:
+                nearest_player.change_health(-self.power)
+                nearest_player.affect_effect(DecreaseHealthEffect(1000, 0.05))
+                nearest_player.affect_effect(DecreaseManaEffect(1000, 0.05))
+                self.current_cooldown = self.attack_cooldown
+        elif distance_to_nearest_player <= self.vision_radius:
+            dx = self.centerx - nearest_player.centerx
+            dy = self.centery - nearest_player.centery
+
+            if abs(dx) > abs(dy):
+                dx, dy = copysign(1, -dx), copysign(abs(dy / dx), -dy)
+            elif abs(dx) < abs(dy):
+                dy, dx = copysign(1, -dy), copysign(abs(dx / dy), -dx)
+            else:
+                dy, dx = copysign(1, -dy), copysign(1, -dx)
+
+            self.update_vector(dx, dy)
+
+        if self.current_cooldown > 0:
+            self.current_cooldown -= 1
+
+        super().update()
 
 
 class BurningMan(Entity):
@@ -589,6 +794,8 @@ class DarkBurningMan(BurningMan):
     def __init__(self, x, y, game):
         super().__init__(x, y, game)
 
+        self.pure_speed = 2
+
         self.attack_cooldown = 60
         self.attack_radius = 400
 
@@ -602,12 +809,110 @@ class DarkBurningMan(BurningMan):
                         load_image(gtn("burning_man_dark_3"), -1)]
 
 
+class VioletEye(Entity):
+    def __init__(self, x, y, game):
+        super().__init__(x, y, 400, 484, [0, 0], game)
+
+        self.pure_strength = 200
+        self.pure_speed = 5
+        self.pure_intelligence = 100
+
+        self.strength_characteristic = self.pure_strength
+        self.speed_characteristic = self.pure_speed
+        self.intelligence_characteristic = self.pure_intelligence
+
+        self.recalculate_attributes()
+        self.fill_attributes()
+
+        self.vision_radius = 500
+        self.attack_radius = 1000
+
+        self.power = 10
+        self.attack_cooldown = 180
+        self.current_cooldown = 0
+
+        self.targets = [Player]
+        self.load_pixmaps()
+
+
+    def draw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        screen.blit(self.pixmaps[self.pixmap_ticks // 200 % 4],
+                    (0, 0))
+        return screen
+    
+    def load_pixmaps(self):
+        self.texture_path = "textures/boss_violet_eye/"
+        def gtn(name):
+            return self.texture_path + name + ".png"
+        
+        self.pixmaps = [load_image(gtn("violet_eye_1"), -1),
+                        load_image(gtn("violet_eye_2"), -1),
+                        load_image(gtn("violet_eye_3"), -1),
+                        load_image(gtn("violet_eye_4"), -1)]
+        
+    def update(self):
+        enemies = list(filter(lambda x: type(x) in self.targets, self.game.get_objects()))
+
+        if not enemies:
+            return
+
+        nearest_player = min(enemies, key=lambda x: (self.centerx - x.centerx) ** 2 + (self.centery - x.centery) ** 2)
+        distance_to_nearest_player = ((self.centerx - nearest_player.centerx) ** 2 +
+                                      (self.centery - nearest_player.centery) ** 2) ** 0.5
+
+        
+        if distance_to_nearest_player <= self.attack_radius:
+            if self.current_cooldown <= 0:
+                x, y = self.centerx, self.centery
+
+                self.game.spawn_object(Magicball(x, y, self.game, [5, 0], self))
+                self.game.spawn_object(Magicball(x, y, self.game, [-5, 0], self))
+                self.game.spawn_object(Magicball(x, y, self.game, [0, 5], self))
+                self.game.spawn_object(Magicball(x, y, self.game, [0, -5], self))
+                self.game.spawn_object(Magicball(x, y, self.game, [7.07, 7.07], self))
+                self.game.spawn_object(Magicball(x, y, self.game, [7.07, -7.07], self))
+                self.game.spawn_object(Magicball(x, y, self.game, [-7.07, 7.07], self))
+                self.game.spawn_object(Magicball(x, y, self.game, [-7.07, -7.07], self))
+                
+                self.current_cooldown = self.attack_cooldown
+                
+        if distance_to_nearest_player <= self.vision_radius:
+            self.attack_cooldown = 30
+            
+            dx = self.centerx - nearest_player.centerx
+            dy = self.centery - nearest_player.centery
+
+            dx = -dx
+            dy = -dy
+
+            if abs(dx) > abs(dy):
+                dx, dy = copysign(1, -dx), copysign(abs(dy / dx), -dy)
+            elif abs(dx) < abs(dy):
+                dy, dx = copysign(1, -dy), copysign(abs(dx / dy), -dx)
+            else:
+                dy, dx = copysign(1, -dy), copysign(1, -dx)
+
+            self.update_vector(dx, dy)
+        else:
+            self.attack_cooldown = 180
+
+        if self.current_cooldown > 0:
+            self.current_cooldown -= 1
+
+        super().update()
+
+        self.pixmap_ticks += 1
+
+
 class Door(GameObject):
     def __init__(self, x, y, game, loc, new_pos):
-        super().__init__(x, y, 50, 50, game)
+        super().__init__(x, y, 45, 45, game)
         self.loc = loc
         self.new_x = new_pos[0]
         self.new_y = new_pos[1]
+
+        self.image = load_image("textures/doors/door_2.png")
 
     def change_location(self, obj):
         self.game.delete_object(obj)
@@ -619,18 +924,26 @@ class Door(GameObject):
         obj.set_y(self.new_y)
 
     def draw(self):
-        screen = pygame.Surface((50, 50), pygame.SRCALPHA)
-        pygame.draw.rect(screen, (50, 0, 0), (0, 0, 50, 50))
-        return screen
+        return self.image
+
+
+class HellDoor(Door):
+    def __init__(self, x, y, game, loc, new_pos):
+        super().__init__(x, y, game, loc, new_pos)
+
+        self.image = load_image("textures/doors/helldoor_2.png")
 
 
 class Fireball(GameObject):
     def __init__(self, x, y, game, speed, sender):
-        super().__init__(x, y, 90, 90, game, speed)
+        super().__init__(x, y, 45, 45, game, speed)
         self.sender = sender
 
         if speed[1] == 0:
-            self.angle = 90
+            if speed[0] > 0:
+                self.angle = 90
+            else:
+                self.angle = 270
         else:
             self.angle = math.degrees(math.atan2(speed[0], speed[1]))
         self.basic_pixmaps = [load_image("textures/balls/fireball_1.png"),
@@ -645,9 +958,13 @@ class Fireball(GameObject):
         super().update()
 
         objects = pygame.sprite.spritecollide(self, self.game.get_objects(), False)
-        if any(map(lambda x: (Entity in x.__class__.__mro__ or
-                   Field in x.__class__.__mro__ and x.get_transition is False) and
+        if any(map(lambda x: Entity in x.__class__.__mro__ and
+                   type(x) is not DarkBurningMan and
                    x is not self.sender, objects)):
+            self.burst()
+
+        environment_objects = pygame.sprite.spritecollide(self, self.game.get_environment_objects(), False)
+        if any(map(lambda x: x.get_transition() is False, environment_objects)):
             self.burst()
 
     def draw(self):
@@ -660,16 +977,83 @@ class Fireball(GameObject):
                                                                self.top + self.speed[1] * 5,
                                                                self.width, self.height,
                                                                30))
-        objects = list(filter(lambda x: Entity in x.__class__.__mro__,
-                              pygame.sprite.spritecollide(self, self.game.get_objects(), False)))
+        objects = list(filter(lambda x: Entity in x.__class__.__mro__ and x is not self.sender and
+                              type(x) is not type(self.sender) and
+                              (self.centerx - x.centerx) ** 2 + (self.centery - x.centery) ** 2 <= 25000,
+                              self.game.get_objects()))
+        objects += list(filter(lambda x: Entity in x.__class__.__mro__ and x is not self.sender and
+                               type(x) is not type(self.sender),
+                               pygame.sprite.spritecollide(self, self.game.get_objects(), False)))
         for o in objects:
-            o.change_health(-20)
+            o.change_health(-5)
+            o.affect_effect(DecreaseHealthEffect(300, 0.02))
+        self.game.delete_object(self)
+
+
+class FrozenBall(GameObject):
+    def __init__(self, x, y, game, speed, sender):
+        super().__init__(x, y, 90, 90, game, speed)
+        self.sender = sender
+
+        if speed[1] == 0:
+            if speed[0] > 0:
+                self.angle = 90
+            else:
+                self.angle = 270
+        else:
+            self.angle = math.degrees(math.atan2(speed[0], speed[1]))
+        self.basic_pixmaps = [load_image("textures/balls/frozenball_1.png"),
+                              load_image("textures/balls/frozenball_2.png")]
+
+        self.rotated_pixmaps = list(map(lambda x: pygame.transform.rotate(x, self.angle), self.basic_pixmaps))
+
+        self.ticks = 0
+
+    def update(self):
+        self.ticks += 1
+        super().update()
+
+        objects = pygame.sprite.spritecollide(self, self.game.get_objects(), False)
+        if any(map(lambda x: Entity in x.__class__.__mro__ and
+                   x is not self.sender, objects)):
+            self.burst()
+
+        environment_objects = pygame.sprite.spritecollide(self, self.game.get_environment_objects(), False)
+        if any(map(lambda x: x.get_transition() is False, environment_objects)):
+            self.burst()
+
+    def draw(self):
+        pix_tic = self.ticks // 5 % len(self.basic_pixmaps)
+        
+        return self.rotated_pixmaps[pix_tic]
+
+    def burst(self):
+        self.game.spawn_object(FrozenExplosionParticleInstance.spawn(self.left + self.speed[0] * 5,
+                                                               self.top + self.speed[1] * 5,
+                                                               self.width, self.height,
+                                                               30))
+        
+        objects = list(filter(lambda x: Entity in x.__class__.__mro__ and x is not self.sender and
+                      type(x) is not type(self.sender) and
+                      (self.centerx - x.centerx) ** 2 + (self.centery - x.centery) ** 2 <= 25000,
+                      self.game.get_objects() + list(pygame.sprite.spritecollide(self, self.game.get_objects(), False))))
+        objects += list(filter(lambda x: Entity in x.__class__.__mro__ and x is not self.sender and
+                               type(x) is not type(self.sender),
+                               pygame.sprite.spritecollide(self, self.game.get_objects(), False)))
+        for o in objects:
+            o.change_health(-10)
+            eff = DecreaseSpeedEffect(300, 10)
+            eff.set_title("Обморожение")
+            o.affect_effect(eff)
         self.game.delete_object(self)
 
 
 class FireballMagic(Magic):
     def __init__(self):
-        super().__init__(self.run, 5)
+        super().__init__(self.run, 2.5)
+
+        self.set_name("Огненный шар")
+        self.load_icon(pygame.transform.rotate(load_image("textures/balls/fireball_1.png"), 135))
 
     def run(self, obj):
         x, y = obj.centerx, obj.centery
@@ -678,9 +1062,108 @@ class FireballMagic(Magic):
         ty = pos[1] + obj.game.get_main_drawer().drawdelta_y
         dx = tx - x
         dy = ty - y
-        a = abs(dx / dy)
 
-        sy = copysign((50 / (a ** 2 + 1)) ** 0.5, dy)
-        sx = copysign(a * sy, dx)
+        if dy != 0:
+            a = abs(dx / dy)
+            sy = copysign((50 / (a ** 2 + 1)) ** 0.5, dy)
+            sx = copysign(a * sy, dx)
+
+        else:
+            sx = copysign(50 ** 0.5, dx)
+            sy = 0
 
         obj.game.spawn_object(Fireball(x - 32, y - 32, obj.game, [sx, sy], obj))
+
+
+class FrozenballMagic(Magic):
+    def __init__(self):
+        super().__init__(self.run, 2.5)
+
+        self.set_name("Ледяной шар")
+        self.load_icon(pygame.transform.rotate(load_image("textures/balls/frozenball_1.png"), 135))
+
+    def run(self, obj):
+        x, y = obj.centerx, obj.centery
+        pos = pygame.mouse.get_pos()
+        tx = pos[0] + obj.game.get_main_drawer().drawdelta_x
+        ty = pos[1] + obj.game.get_main_drawer().drawdelta_y
+        dx = tx - x
+        dy = ty - y
+        
+        if dy != 0:
+            a = abs(dx / dy)
+            sy = copysign((50 / (a ** 2 + 1)) ** 0.5, dy)
+            sx = copysign(a * sy, dx)
+
+        else:
+            sx = copysign(50 ** 0.5, dx)
+            sy = 0
+
+        obj.game.spawn_object(FrozenBall(x - 32, y - 32, obj.game, [sx, sy], obj))
+
+
+class HealMagic(Magic):
+    def __init__(self):
+        super().__init__(self.run, 5)
+
+        self.set_name("Лечение")
+        self.load_icon(pygame.transform.rotate(load_image("textures/balls/lifeball.png"), 135))
+
+    def run(self, obj):
+        obj.change_health(10)
+
+
+class Magicball(GameObject):
+    def __init__(self, x, y, game, speed, sender):
+        super().__init__(x, y, 45, 45, game, speed)
+        self.sender = sender
+
+        if speed[1] == 0:
+            if speed[0] > 0:
+                self.angle = 90
+            else:
+                self.angle = 270
+        else:
+            self.angle = math.degrees(math.atan2(speed[0], speed[1]))
+        self.basic_pixmaps = [load_image("textures/balls/magicball_1.png"),
+                              load_image("textures/balls/magicball_2.png")]
+
+        self.rotated_pixmaps = list(map(lambda x: pygame.transform.rotate(x, self.angle), self.basic_pixmaps))
+
+        self.ticks = 0
+
+    def update(self):
+        self.ticks += 1
+        super().update()
+
+        objects = pygame.sprite.spritecollide(self, self.game.get_objects(), False)
+        if any(map(lambda x: Entity in x.__class__.__mro__ and
+                   type(x) is not DarkBurningMan and
+                   x is not self.sender, objects)):
+            self.burst()
+
+        environment_objects = pygame.sprite.spritecollide(self, self.game.get_environment_objects(), False)
+        if any(map(lambda x: x.get_transition() is False, environment_objects)):
+            self.burst()
+
+    def draw(self):
+        pix_tic = self.ticks // 5 % len(self.basic_pixmaps)
+        
+        return self.rotated_pixmaps[pix_tic]
+
+    def burst(self):
+        self.game.spawn_object(ExplosionParticleInstance.spawn(self.left + self.speed[0] * 5,
+                                                               self.top + self.speed[1] * 5,
+                                                               self.width, self.height,
+                                                               30))
+        objects = list(filter(lambda x: Entity in x.__class__.__mro__ and x is not self.sender and
+                              type(x) is not type(self.sender) and
+                              (self.centerx - x.centerx) ** 2 + (self.centery - x.centery) ** 2 <= 25000,
+                              self.game.get_objects()))
+        for o in objects:
+            o.change_health(-10)
+            o.change_mana(-10)
+            o.affect_effect(DecreaseHealthEffect(300, 0.02))
+            o.affect_effect(DecreaseManaEffect(300, 0.02))
+        self.game.delete_object(self)
+

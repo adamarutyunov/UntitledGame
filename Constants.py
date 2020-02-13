@@ -16,6 +16,7 @@ BORDER_COLOR = (255, 216, 0)
 INVENTORY_POS = (30, 625)
 EFFECTS_WINDOW_POS = (30, 170)
 ITEM_CELL_POS = (30, 975)
+MAGIC_CELL_POS = (124, 975)
 ATTRIBUTE_BAR_POS = (30, 30)
 CHARACTERISTICS_WINDOW_POS = (755, 804)
 
@@ -30,12 +31,7 @@ def DEF_NULL(*args, **kwargs):
 
 def load_image(path, color_key=None):
     image = pygame.image.load(path)
-    if color_key is not None:
-        if color_key == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(color_key)
-    else:
-        image = image.convert_alpha()
+    image = image.convert_alpha()
     return image
 
 MagicFont = pygame.font.Font("fonts/Magic.ttf", 23)

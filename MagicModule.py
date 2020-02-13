@@ -6,10 +6,25 @@ class Magic:
         self.func = func
         self.need_magic = magic
 
+        self.icon = None
+        self.name = ""
+
     def use(self, obj):
         if obj.get_mana() >= self.need_magic:
             obj.change_mana(-self.need_magic)
             self.func(obj)
+
+    def load_icon(self, icon):
+        self.icon = icon
+
+    def get_icon(self):
+        return self.icon
+
+    def set_name(self, name):
+        self.name = name
+
+    def get_name(self):
+        return self.name
 
 
 class Effect:
@@ -180,7 +195,7 @@ class IncreaseSpeedEffect(Effect):
 
 class DecreaseSpeedEffect(Effect):
     def __init__(self, duration, value):
-        super().__init__(duration, lambda _: None, self.start_function, self.end_function)
+        super().__init__(duration, self.mid_function)
 
         self.set_description(f"Снижение скорости на {value} на {duration / FPS} секунд")
         self.value = value
