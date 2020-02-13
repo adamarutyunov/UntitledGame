@@ -383,7 +383,7 @@ TheHellLocation.spawn_object(D)
 Boss = VioletEye(1500, 550, UGame)
 TheHellLocation.spawn_object(Boss)
 
-UGame.load_location(TheHellCorridorLocation)
+UGame.load_location(StartLocation)
 UGame.spawn_object(UGame.get_main_player())
 
 GameGUI.redraw_all()
