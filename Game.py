@@ -3,112 +3,17 @@ import pygame
 pygame.init()
 pygame.display.set_mode((1, 1))
 
-from BaseModule import *
-from Constants import *
-from LocationModule import *
-from TechnicalModule import *
-from EntityModule import *
-from MagicModule import *
-from Instances import *
-
-
-
-class Game:
-    def __init__(self): 
-        self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN | pygame.SRCALPHA)
-
-        self.main_player = None
-        self.main_drawer = None
-        self.main_event_handler = None
-        self.main_gui = None
-
-        self.gui_state = False
-
-        self.current_location = None
-        
-    def get_size(self):
-        return self.size
-
-    def get_screen(self):
-        return self.screen
-
-    def get_location(self):
-        return self.current_location
-
-    def get_objects(self):
-        return self.current_location.get_objects()
-
-    def get_environment_objects(self):
-        return self.current_location.get_environment_objects()
-
-    def set_main_player(self, player):
-        self.main_player = player
-
-    def set_main_drawer(self, drawer):
-        self.main_drawer = drawer
-
-    def set_main_event_handler(self, event_handler):
-        self.main_event_handler = event_handler
-
-    def set_main_gui(self, gui):
-        self.main_gui = gui
-
-    def set_main_music_module(self, music_module):
-        self.main_music_module = music_module
-
-    def get_main_player(self):
-        return self.main_player
-
-    def get_main_drawer(self):
-        return self.main_drawer
-
-    def get_main_event_handler(self):
-        return self.main_event_handler
-
-    def get_main_gui(self):
-        return self.main_gui
-
-    def get_main_music_module(self):
-        return self.main_music_module
-
-    def load_location(self, location):
-        self.current_location = location
-        self.size = self.current_location.get_pixel_size()
-        self.main_drawer.set_location()
-        self.main_gui.add_info(location.name, 120)
-
-    def spawn_object(self, obj):
-        self.current_location.spawn_object(obj)
-
-    def spawn_environment_object(self, obj):
-        self.current_location.spawn_ecvironment_object(obj)
-
-    def draw(self):
-        self.main_drawer.draw()
-
-    def set_gui_state(self, state):
-        self.gui_state = state
-
-    def toggle_gui(self):
-        self.gui_state = not self.gui_state
-
-    def get_gui_state(self):
-        return self.gui_state
-
-    def close(self):
-        pygame.quit()
-
-    def update(self):
-        self.main_event_handler.process_events()
-        self.main_drawer.update_drawdeltas()
-        self.current_location.update()
-
-    def delete_object(self, obj):
-        self.current_location.remove_object(obj)
+if __name__ == "__main__":
+    from BaseModule import *
+    from Constants import *
+    from LocationModule import *
+    from TechnicalModule import *
+    from EntityModule import *
+    from MagicModule import *
+    from Instances import *
+    
 
 clock = pygame.time.Clock()
-
-UGame = Game()
 pygame.display.update()
 
 GameDrawer = Drawer(UGame)
@@ -122,8 +27,6 @@ UGame.set_main_gui(GameGUI)
 
 UMusicModule = MusicModule(UGame)
 UGame.set_main_music_module(UMusicModule)
-
-#GameGUI.die()
 
 player = Player(100, 100, UGame)
 UGame.set_main_player(player)
@@ -140,39 +43,6 @@ LS.load_icon(load_image("textures/items/weapon/long_sword.png"))
 HS = Weapon(150, lambda obj: obj.change_health(-30))
 HS.set_name("Стальной меч")
 HS.load_icon(load_image("textures/items/weapon/hard_sword.png"))
-
-
-StartLocation = Location(UGame)
-StartLocation.load(f"{locations_path}/Start.loc")
-StartLocation.set_name("Начало")
-
-GreenFieldsLocation = Location(UGame)
-GreenFieldsLocation.load(f"{locations_path}/GreenFields.loc")
-GreenFieldsLocation.set_name("Зеленые поля")
-
-CatacombsLocation = Location(UGame)
-CatacombsLocation.load(f"{locations_path}/Catacombs.loc")
-CatacombsLocation.set_name("Катакомбы")
-
-TheDarkCorridorLocation = Location(UGame)
-TheDarkCorridorLocation.load(f"{locations_path}/TheDarkCorridor.loc")
-TheDarkCorridorLocation.set_name("Темный коридор")
-
-OldFortressLocation = Location(UGame)
-OldFortressLocation.load(f"{locations_path}/OldFortress.loc")
-OldFortressLocation.set_name("Старая крепость")
-
-TheLabyrinthLocation = Location(UGame)
-TheLabyrinthLocation.load(f"{locations_path}/TheLabyrinth.loc")
-TheLabyrinthLocation.set_name("Лабиринт")
-
-TheHellCorridorLocation = Location(UGame)
-TheHellCorridorLocation.load(f"{locations_path}/TheHellCorridor.loc")
-TheHellCorridorLocation.set_name("Дорога в ад")
-
-TheHellLocation = Location(UGame)
-TheHellLocation.load(f"{locations_path}/TheHell.loc")
-TheHellLocation.set_name("Ад")
 
 
 StartLocation.spawn_object(Door(550, 468, UGame, GreenFieldsLocation, (100, 100)))
@@ -329,7 +199,7 @@ B = BurningMan(490, 1460, UGame)
 TheLabyrinthLocation.spawn_object(B)
 B = BurningMan(490, 700, UGame)
 TheLabyrinthLocation.spawn_object(B)
-B = BurningMan(1300, 700, UGame)
+B = BurningMan(1320, 700, UGame)
 TheLabyrinthLocation.spawn_object(B)
 
 D = Drop(900, 1100, UGame, HealthUpPotion())
@@ -346,13 +216,11 @@ TheHellCorridorLocation.spawn_object(MagicDrop(1700, 140, UGame, HealMagic()))
 TheHellCorridorLocation.spawn_object(Drop(600, 120, UGame, HS))
 
 D = DarkBurningMan(1000, 100, UGame)
-D.get_item(HealthUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1050, 200, UGame)
 D.get_item(MagicUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1100, 300, UGame)
-D.get_item(HealthUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1150, 400, UGame)
 D.get_item(MagicUpPotion())
@@ -361,20 +229,15 @@ D = DarkBurningMan(1200, 500, UGame)
 D.get_item(HealthUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1250, 600, UGame)
-D.get_item(MagicUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1200, 700, UGame)
-D.get_item(HealthUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1150, 800, UGame)
-D.get_item(MagicUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1100, 900, UGame)
 D.get_item(MagicUpPotion())
-D.get_item(HealthUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1050, 1000, UGame)
-D.get_item(MagicUpPotion())
 TheHellLocation.spawn_object(D)
 D = DarkBurningMan(1000, 1100, UGame)
 D.get_item(MagicUpPotion())
@@ -383,7 +246,9 @@ TheHellLocation.spawn_object(D)
 Boss = VioletEye(1500, 550, UGame)
 TheHellLocation.spawn_object(Boss)
 
-UGame.load_location(StartLocation)
+TheFinalLocation.spawn_object(FinalSeller(300, 0, UGame))
+
+UGame.load_location(TheHellCorridorLocation)
 UGame.spawn_object(UGame.get_main_player())
 
 GameGUI.redraw_all()

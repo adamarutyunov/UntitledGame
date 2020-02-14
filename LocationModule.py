@@ -159,3 +159,39 @@ LocationCodes = {
     "s": HellstoneField}
 
 locations_path = "locations"
+
+
+StartLocation = Location(UGame)
+StartLocation.load(f"{locations_path}/Start.loc")
+StartLocation.set_name("Начало")
+
+GreenFieldsLocation = Location(UGame)
+GreenFieldsLocation.load(f"{locations_path}/GreenFields.loc")
+GreenFieldsLocation.set_name("Зеленые поля")
+
+CatacombsLocation = Location(UGame)
+CatacombsLocation.load(f"{locations_path}/Catacombs.loc")
+CatacombsLocation.set_name("Катакомбы")
+
+TheDarkCorridorLocation = Location(UGame)
+TheDarkCorridorLocation.load(f"{locations_path}/TheDarkCorridor.loc")
+TheDarkCorridorLocation.set_name("Темный коридор")
+
+OldFortressLocation = Location(UGame)
+OldFortressLocation.load(f"{locations_path}/OldFortress.loc")
+OldFortressLocation.set_name("Старая крепость")
+
+TheLabyrinthLocation = Location(UGame)
+TheLabyrinthLocation.load(f"{locations_path}/TheLabyrinth.loc")
+TheLabyrinthLocation.set_name("Лабиринт")
+
+TheHellCorridorLocation = Location(UGame)
+TheHellCorridorLocation.load(f"{locations_path}/TheHellCorridor.loc")
+TheHellCorridorLocation.set_name("Дорога в ад")
+
+TheHellLocation = Location(UGame)
+TheHellLocation.load(f"{locations_path}/TheHell.loc")
+TheHellLocation.set_name("Ад")
+
+TheFinalLocation = Location(UGame)
+TheFinalLocation.load(f"{locations_path}/TheFinal.loc")

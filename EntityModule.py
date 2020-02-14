@@ -218,7 +218,7 @@ class Entity(GameObject):
 
     def get_item(self, item):
         if not None in self.inventory:
-            return
+            return False
         self.inventory[self.inventory.index(None)] = item
 
         if Player in self.__class__.__mro__:
@@ -324,13 +324,27 @@ class Entity(GameObject):
         return self.inventory[self.current_item_index]
 
     def next_item(self):
-        self.current_item_index += 1
-        self.current_item_index %= len(self.inventory)
+        if not any(self.inventory):
+            return
+        
+        while True:
+            self.current_item_index += 1
+            self.current_item_index %= len(self.inventory)
+            if self.get_current_item() is not None:
+                break
+
         self.game.get_main_gui().update_item_cell()
 
     def prev_item(self):
-        self.current_item_index -= 1
-        self.current_item_index %= len(self.inventory)
+        if not any(self.inventory):
+            return
+        
+        while True:
+            self.current_item_index -= 1
+            self.current_item_index %= len(self.inventory)
+            if self.get_current_item() is not None:
+                break
+            
         self.game.get_main_gui().update_item_cell()
 
     def next_magic(self):
@@ -390,7 +404,7 @@ class Player(Entity):
         self.x_delta = 0
         self.y_delta = 0
 
-        self.pure_strength = 15
+        self.pure_strength = 150
         self.pure_speed = 15
         self.pure_intelligence = 15
 
@@ -813,7 +827,7 @@ class VioletEye(Entity):
     def __init__(self, x, y, game):
         super().__init__(x, y, 400, 484, [0, 0], game)
 
-        self.pure_strength = 200
+        self.pure_strength = 20
         self.pure_speed = 5
         self.pure_intelligence = 100
 
@@ -903,6 +917,12 @@ class VioletEye(Entity):
         super().update()
 
         self.pixmap_ticks += 1
+
+    def die(self):
+        super().die()
+        self.game.spawn_object(HellDoor(self.centerx, self.centery,
+                                        UGame, TheFinalLocation,
+                                        (0, 0)))
 
 
 class Door(GameObject):
@@ -1167,3 +1187,101 @@ class Magicball(GameObject):
             o.affect_effect(DecreaseManaEffect(300, 0.02))
         self.game.delete_object(self)
 
+
+class FinalSeller(Entity):
+    def __init__(self, x, y, game):
+        super().__init__(x, y, 64, 64, [0, 0], game)
+
+        self.pure_strength = 1
+        self.pure_speed = 1
+        self.pure_intelligence = 1000000000
+
+        self.strength_characteristic = self.pure_strength
+        self.speed_characteristic = self.pure_speed
+        self.intelligence_characteristic = self.pure_intelligence
+
+        self.recalculate_attributes()
+        self.fill_attributes()
+
+        self.put_label("")
+        self.final = pygame.Surface((1920, 1080))
+        pygame.draw.rect(self.final, (255, 255, 255), (0, 0, *SCREEN_SIZE))
+        self.final.set_alpha(0)
+
+        self.load_pixmaps()
+
+        self.ticks = 0
+
+
+    def draw(self):
+        screen = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        screen.blit(self.pixmaps[0],
+                    (0, 0))
+        self.game.screen.blit(self.label, (SCREEN_SIZE[0] // 2 - self.label.get_rect().width // 2, 900))
+        self.game.screen.blit(self.final, (0, 0))
+        return screen
+    
+    def load_pixmaps(self):
+        self.pixmaps = [load_image("textures/items/prodavec.png", -1)]
+        
+    def update(self):
+        self.game.get_main_player().fill_attributes()
+        self.game.get_main_player().effects = []
+        self.game.get_main_gui().clear()
+        pygame.mixer.music.stop()
+
+        for obj in self.game.get_objects():
+            if obj is not self.game.get_main_player() and obj is not self:
+                self.game.delete_object(obj)
+
+
+        self.ticks += 1
+
+        if self.ticks in range(200, 400):
+            self.put_label("So, you win.")
+        elif self.ticks in range(600, 800):
+            self.put_label("But game is not completed yet.")
+        elif self.ticks in range(1200, 1300):
+            self.put_label("So...")
+        elif self.ticks in range(1400, 1600):
+            self.put_label("You are not supposed to be here.")
+        else:
+            self.put_label("")
+
+        if self.ticks in range(1700, 1956):
+            self.final.set_alpha((self.ticks - 1700))
+
+        if self.ticks >= 1956:
+            f = Final()
+
+        self.game.screen.blit(self.final, (0, 0))
+        super().update()
+        
+
+    def put_label(self, label):
+        self.label = PixelTimes.render(label, True, (255, 255, 255))
+
+
+class Final:
+    def __init__(self):
+        img = load_image("textures/gui/final.png")
+        yl = load_image("textures/gui/yl.png")
+        clock = pygame.time.Clock()
+        self.ticks = 0
+        
+        while True:
+            events = pygame.event.get()
+            for e in events:
+                if e.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                
+            UGame.screen.blit(img, (0, 0))
+            if self.ticks >= 90:
+                UGame.screen.blit(yl, (SCREEN_SIZE[0] // 2 - yl.get_rect().width // 2, 900))
+            pygame.display.flip()
+            clock.tick(FPS)
+
+            self.ticks += 1
+            
+        

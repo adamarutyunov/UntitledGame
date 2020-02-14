@@ -252,7 +252,8 @@ class Drop(GameObject):
         return self.icon
 
     def get(self, obj):
-        obj.get_item(self.item)
+        if obj.get_item(self.item) is False:
+            return
         self.game.delete_object(self)
         if obj is self.game.get_main_player():
             self.game.get_main_gui().add_info(self.item.get_name(), 120)

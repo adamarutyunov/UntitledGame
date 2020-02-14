@@ -41,7 +41,7 @@ class Drawer:
                 self.screen.blit(draw_surface, (obj.left - self.drawdelta_x,
                                                 obj.top - self.drawdelta_y))
                 hp_indicator = self.game.get_main_gui().get_health_indicator(obj)
-                if hp_indicator:
+                if hp_indicator and self.game.get_location() is not TheFinalLocation:
                     self.screen.blit(hp_indicator, (obj.left - self.drawdelta_x,
                                                     obj.top - self.drawdelta_y - 10 - hp_indicator.get_rect().height))
 
@@ -469,6 +469,7 @@ class GUI:
 
         self.context_menu = None
         self.info = None
+        self.cleared = False
 
     def get_inventory(self):
         return self.inventory
@@ -507,9 +508,14 @@ class GUI:
         self.update_effects_window()
         self.update_characteristics_window()
         self.update_magic_cell()
+        
+        self.cleared = False
 
     def die(self):
-        d = DeathMenu()  
+        d = DeathMenu()
+
+    def clear(self):
+        self.cleared = True
 
     def update(self):
         x, y = pygame.mouse.get_pos()
@@ -548,6 +554,9 @@ class GUI:
         
     
     def draw(self):
+        if self.cleared:
+            return
+        
         health = self.game.get_main_player().get_health()
         max_health = self.game.get_main_player().get_max_health()
         if health / max_health < 0.1:
@@ -695,7 +704,8 @@ class MainMenu:
 
         if (self.exitbutton_pos[0] <= self.mouse_pos[0] <= self.exitbutton_pos[0] + self.exitbutton.get_rect().width and
                 self.exitbutton_pos[1] <= self.mouse_pos[1] <= self.exitbutton_pos[1] + self.exitbutton.get_rect().height):
-            return False        
+            return False
+        
         
 
 class DeathMenu:
