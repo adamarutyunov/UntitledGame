@@ -274,6 +274,7 @@ class CharacteristicsWindow(GUIModule):
 
         self.screen = screen
 
+
 class ItemCell(GUIModule):
     def __init__(self, game):        
         self.cell_pixmap = load_image("textures/gui/cell.png")
@@ -617,13 +618,13 @@ class MusicModule:
         self.sound_paths = map(lambda x: self.music_path + x + ".mp3", self.music_names)
         self.sounds = cycle(self.sound_paths)
 
-        self.silence_time = 3600
+        self.silence_time = 900
         self.current_time = 0
 
     def change_music(self, music_name):
         self.current_time = 0
         pygame.mixer.music.load(music_name)
-        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.set_volume(0.3)
         pygame.mixer.music.play()
 
     def update(self):

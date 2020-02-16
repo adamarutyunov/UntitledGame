@@ -248,7 +248,7 @@ TheHellLocation.spawn_object(Boss)
 
 TheFinalLocation.spawn_object(FinalSeller(300, 0, UGame))
 
-UGame.load_location(TheHellCorridorLocation)
+UGame.load_location(StartLocation)
 UGame.spawn_object(UGame.get_main_player())
 
 GameGUI.redraw_all()

@@ -404,7 +404,7 @@ class Player(Entity):
         self.x_delta = 0
         self.y_delta = 0
 
-        self.pure_strength = 150
+        self.pure_strength = 15
         self.pure_speed = 15
         self.pure_intelligence = 15
 
@@ -827,7 +827,7 @@ class VioletEye(Entity):
     def __init__(self, x, y, game):
         super().__init__(x, y, 400, 484, [0, 0], game)
 
-        self.pure_strength = 20
+        self.pure_strength = 200
         self.pure_speed = 5
         self.pure_intelligence = 100
 
